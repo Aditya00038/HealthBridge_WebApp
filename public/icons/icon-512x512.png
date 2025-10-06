@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="64" fill="#10b981"/>
+  <path d="M256 128c-70.69 0-128 57.31-128 128s57.31 128 128 128 128-57.31 128-128-57.31-128-128-128zm0 24c57.438 0 104 46.562 104 104s-46.562 104-104 104-104-46.562-104-104 46.562-104 104-104z" fill="white"/>
+  <path d="M224 208h64v96h-64v-96zm0-48h64v24h-64v-24z" fill="white"/>
+  <text x="256" y="448" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">CareConnect</text>
+  <text x="256" y="480" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="20">Healthcare Platform</text>
+</svg>

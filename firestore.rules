@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read and write their own user profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow all authenticated users to read approved doctor profiles (for appointment booking)
+      allow read: if request.auth != null && resource.data.role == 'doctor' && resource.data.profileStatus == 'approved';
+      // Allow all authenticated users to read any user profile (for general app functionality)
+      allow read: if request.auth != null;
+    }
+    
+    // Allow authenticated users to read all approved doctors (for appointment booking)
+    match /users/{userId} {
+      allow read: if request.auth != null && resource.data.role == 'doctor';
+    }
+    
+    // Allow authenticated users to manage their own subscription
+    match /subscriptions/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Appointment rules
+    match /appointments/{appointmentId} {
+      // Allow users to read appointments where they are patient or doctor
+      allow read: if request.auth != null && 
+        (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+      
+      // Allow authenticated users to create appointments (for both patients and test creation)
+      allow create: if request.auth != null;
+      
+      // Allow patients and doctors to update their own appointments
+      allow update: if request.auth != null && 
+        (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+      
+      // Allow patients and doctors to delete their own appointments
+      allow delete: if request.auth != null && 
+        (resource.data.patientId == request.auth.uid || resource.data.doctorId == request.auth.uid);
+    }
+    
+    // Allow listing appointments for doctors and patients
+    match /appointments/{document=**} {
+      allow list: if request.auth != null;
+    }
+    
+    // Notification rules
+    match /notifications/{notificationId} {
+      // Allow users to read their own notifications
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Allow authenticated users to create notifications
+      allow create: if request.auth != null;
+      
+      // Allow users to update their own notifications (mark as read)
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Allow listing notifications for users
+    match /notifications/{document=**} {
+      allow list: if request.auth != null;
+    }
+    
+    // Chat/Messages rules (if you add chat functionality)
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Admin collections (if needed)
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Payments/Billing (if you add payment functionality)
+    match /payments/{paymentId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Reviews/Ratings
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.patientId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.patientId;
+    }
+    
+    // Allow read access to public data
+    match /public/{document=**} {
+      allow read: if true;
+    }
+  }
+}

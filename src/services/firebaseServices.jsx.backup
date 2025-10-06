@@ -1,0 +1,516 @@
+﻿import { 
+  collection, 
+  doc, 
+  addDoc, 
+  getDoc, 
+  getDocs, 
+  query, 
+  where  // Create new appointment
+  async createAppointment(appointmentData) {
+    try {
+      const docRef = await addDoc(collection(db, 'appointments'), {
+        ...appointmentData,
+        status: 'pending',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      return { id: docRef.id, ...appointmentData, status: 'pending' };
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      throw error;
+    }
+  },
+
+  // Approve appointment (doctor function)
+  async approveAppointment(appointmentId, doctorId) {
+    try {
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      await updateDoc(appointmentRef, {
+        status: 'confirmed',
+        confirmedAt: Timestamp.now(),
+        confirmedBy: doctorId,
+        updatedAt: Timestamp.now()
+      });
+      console.log('Appointment approved:', appointmentId);
+      return { success: true, message: 'Appointment approved successfully' };
+    } catch (error) {
+      console.error('Error approving appointment:', error);
+      throw error;
+    }
+  },
+
+  // Reject appointment (doctor function)
+  async rejectAppointment(appointmentId, doctorId, rejectionReason = '') {
+    try {
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      await updateDoc(appointmentRef, {
+        status: 'rejected',
+        rejectedAt: Timestamp.now(),
+        rejectedBy: doctorId,
+        rejectionReason: rejectionReason,
+        updatedAt: Timestamp.now()
+      });
+      console.log('Appointment rejected:', appointmentId);
+      return { success: true, message: 'Appointment rejected' };
+    } catch (error) {
+      console.error('Error rejecting appointment:', error);
+      throw error;
+    }
+  },
+
+  // Get pending appointments for doctor
+  async getPendingAppointments(doctorId) {
+    try {
+      const q = query(
+        collection(db, 'appointments'),
+        where('doctorId', '==', doctorId),
+        where('status', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn('Error fetching pending appointments, using fallback:', error);
+      // Return empty array if error
+      return [];
+    }
+  }
+};
+  setDoc, 
+  updateDoc, 
+  Timestamp 
+} from 'firebase/firestore';
+import { db } from '../firebase/config';
+
+// Appointment Services with fallback handling
+export const appointmentServices = {
+  // Get user appointments with improved error handling
+  async getUserAppointments(userId, role = 'patient') {
+    try {
+      const field = role === 'patient' ? 'patientId' : 'doctorId';
+      
+      // Try simple query first to avoid index issues
+      const simpleQ = query(
+        collection(db, 'appointments'),
+        where(field, '==', userId)
+      );
+      
+      const querySnapshot = await getDocs(simpleQ);
+      const appointments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Sort appointments by date in memory
+      return appointments.sort((a, b) => {
+        if (a.appointmentDate && b.appointmentDate) {
+          return new Date(b.appointmentDate.toDate ? b.appointmentDate.toDate() : b.appointmentDate) - 
+                 new Date(a.appointmentDate.toDate ? a.appointmentDate.toDate() : a.appointmentDate);
+        }
+        return 0;
+      });
+    } catch (error) {
+      console.warn('Error fetching appointments, using fallback data:', error);
+      
+      // Return fallback data based on role
+      if (role === 'patient') {
+        return [
+          {
+            id: 'fallback-1',
+            doctorName: 'Dr. Sarah Wilson',
+            specialization: 'General Medicine',
+            appointmentDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+            status: 'upcoming',
+            type: 'video',
+            time: '10:00 AM',
+            notes: 'Regular checkup'
+          },
+          {
+            id: 'fallback-2',
+            doctorName: 'Dr. Michael Brown',
+            specialization: 'Cardiology',
+            appointmentDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            status: 'completed',
+            type: 'physical',
+            time: '2:30 PM',
+            notes: 'Heart examination'
+          }
+        ];
+      } else {
+        return [
+          {
+            id: 'doc-fallback-1',
+            patientName: 'John Smith',
+            appointmentDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            status: 'upcoming',
+            type: 'video',
+            time: '9:00 AM',
+            reason: 'Regular checkup'
+          },
+          {
+            id: 'doc-fallback-2',
+            patientName: 'Emily Johnson',
+            appointmentDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+            status: 'upcoming',
+            type: 'physical',
+            time: '11:30 AM',
+            reason: 'Follow-up consultation'
+          }
+        ];
+      }
+    }
+  },
+
+  // Create new appointment
+  async createAppointment(appointmentData) {
+    try {
+      const docRef = await addDoc(collection(db, 'appointments'), {
+        ...appointmentData,
+        status: 'pending',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      return { id: docRef.id, ...appointmentData, status: 'pending' };
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      throw error;
+    }
+  },
+
+  // Approve appointment (doctor function)
+  async approveAppointment(appointmentId, doctorId) {
+    try {
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      await updateDoc(appointmentRef, {
+        status: 'confirmed',
+        confirmedAt: Timestamp.now(),
+        confirmedBy: doctorId,
+        updatedAt: Timestamp.now()
+      });
+      console.log('Appointment approved:', appointmentId);
+      return { success: true, message: 'Appointment approved successfully' };
+    } catch (error) {
+      console.error('Error approving appointment:', error);
+      throw error;
+    }
+  },
+
+  // Reject appointment (doctor function)
+  async rejectAppointment(appointmentId, doctorId, rejectionReason = '') {
+    try {
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      await updateDoc(appointmentRef, {
+        status: 'rejected',
+        rejectedAt: Timestamp.now(),
+        rejectedBy: doctorId,
+        rejectionReason: rejectionReason,
+        updatedAt: Timestamp.now()
+      });
+      console.log('Appointment rejected:', appointmentId);
+      return { success: true, message: 'Appointment rejected' };
+    } catch (error) {
+      console.error('Error rejecting appointment:', error);
+      throw error;
+    }
+  },
+
+  // Get pending appointments for doctor
+  async getPendingAppointments(doctorId) {
+    try {
+      const q = query(
+        collection(db, 'appointments'),
+        where('doctorId', '==', doctorId),
+        where('status', '==', 'pending'),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn('Error fetching pending appointments:', error);
+      // Return empty array if error
+      return [];
+    }
+  }
+};
+
+;
+
+// Subscription Services with fallback handling
+export const subscriptionServices = {
+  // Get user subscription data
+  async getUserSubscription(userId) {
+    try {
+      const docRef = doc(db, 'subscriptions', userId);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+      } else {
+        // Return default free plan if no subscription found
+        return {
+          id: userId,
+          plan: 'free',
+          status: 'active',
+          features: ['basic_appointments', 'limited_consultations'],
+          expiresAt: null
+        };
+      }
+    } catch (error) {
+      console.warn('Error fetching subscription data, using fallback:', error);
+      
+      // Return fallback subscription data
+      return {
+        id: userId,
+        plan: 'free',
+        status: 'active',
+        features: ['basic_appointments', 'limited_consultations', 'chatbot_access'],
+        expiresAt: null,
+        appointmentsLeft: 3,
+        videoCallsLeft: 1
+      };
+    }
+  },
+
+  // Get all available subscription plans
+  async getSubscriptionPlans() {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'subscription_plans'));
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn('Error fetching subscription plans, using fallback:', error);
+      
+      // Return fallback plans
+      return [
+        {
+          id: 'free',
+          name: 'Free Plan',
+          price: 0,
+          features: ['3 appointments/month', '1 video call/month', 'Basic chatbot'],
+          popular: false
+        },
+        {
+          id: 'premium',
+          name: 'Premium Plan',
+          price: 29.99,
+          features: ['Unlimited appointments', 'Unlimited video calls', 'Advanced chatbot', 'Priority support'],
+          popular: true
+        },
+        {
+          id: 'family',
+          name: 'Family Plan',
+          price: 49.99,
+          features: ['Up to 5 family members', 'All Premium features', 'Family health tracking'],
+          popular: false
+        }
+      ];
+    }
+  }
+};
+
+// Doctor Services
+export const doctorServices = {
+  // Debug function to check all users with role=doctor
+  async debugAllDoctors() {
+    try {
+      console.log('🔍 DEBUG: Checking ALL users with role=doctor');
+      const q = query(collection(db, 'users'), where('role', '==', 'doctor'));
+      const querySnapshot = await getDocs(q);
+      
+      console.log(`📊 Total doctors in database: ${querySnapshot.docs.length}`);
+      
+      querySnapshot.docs.forEach((doc, index) => {
+        const data = doc.data();
+        console.log(`👨‍⚕️ Doctor ${index + 1} (${doc.id}):`, {
+          name: data.name || data.displayName,
+          email: data.email,
+          role: data.role,
+          profileStatus: data.profileStatus,
+          isApproved: data.isApproved,
+          specialization: data.specialization,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt
+        });
+      });
+      
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('❌ Error in debugAllDoctors:', error);
+      return [];
+    }
+  },
+
+  // Get all doctors (with optional approval filter)
+  async getAllDoctors(showOnlyApproved = true) {
+    try {
+      console.log('🔍 getAllDoctors called, showOnlyApproved:', showOnlyApproved);
+      
+      let q;
+      if (showOnlyApproved) {
+        q = query(
+          collection(db, 'users'),
+          where('role', '==', 'doctor'),
+          where('profileStatus', '==', 'approved')
+        );
+        console.log('📋 Query: role=doctor AND profileStatus=approved');
+      } else {
+        q = query(
+          collection(db, 'users'),
+          where('role', '==', 'doctor')
+        );
+        console.log('📋 Query: role=doctor (all doctors)');
+      }
+      
+      const querySnapshot = await getDocs(q);
+      console.log(`📊 Raw query result: ${querySnapshot.docs.length} documents found`);
+      
+      // Log each doctor document for debugging
+      querySnapshot.docs.forEach((doc, index) => {
+        const data = doc.data();
+        console.log(`👨‍⚕️ Doctor ${index + 1}:`, {
+          id: doc.id,
+          name: data.name,
+          displayName: data.displayName,
+          email: data.email,
+          role: data.role,
+          profileStatus: data.profileStatus,
+          isApproved: data.isApproved,
+          specialization: data.specialization
+        });
+      });
+      
+      const doctors = querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        // Ensure consistent data structure
+        name: doc.data().displayName || doc.data().name || 'Dr. ' + doc.data().email?.split('@')[0],
+        available: doc.data().available !== false, // Default to true if not specified
+        rating: doc.data().rating || 4.5, // Default rating
+        consultationFee: doc.data().consultationFee || 50,
+        videoConsultationFee: doc.data().videoConsultationFee || 40
+      }));
+      
+      console.log(`✅ Found ${doctors.length} approved doctors in database`);
+      
+      if (doctors.length === 0) {
+        console.log('❌ No registered doctors found');
+      } else {
+        console.log('✅ Returning registered doctors:', doctors.map(d => `${d.name} (${d.specialization})`));
+      }
+      
+      return doctors;
+    } catch (error) {
+      console.error('❌ Error fetching doctors:', error);
+      return []; // Return empty array on error
+    }
+  },
+
+
+
+  // Create or update doctor profile
+  async createDoctorProfile(userId, doctorData) {
+    try {
+      console.log('🏥 Creating doctor profile for userId:', userId);
+      console.log('📝 Doctor data received:', doctorData);
+      
+      // First, get existing user data to preserve signup info
+      const docRef = doc(db, 'users', userId);
+      const existingDoc = await getDoc(docRef);
+      const existingData = existingDoc.exists() ? existingDoc.data() : {};
+      
+      console.log('💾 Existing user data:', existingData);
+      console.log('🔍 Existing role:', existingData.role);
+      console.log('🔍 Existing profileStatus:', existingData.profileStatus);
+      
+      const doctorProfile = {
+        // Preserve existing user data from signup
+        ...existingData,
+        // Add/update with new profile data
+        ...doctorData,
+        // Ensure critical fields are set correctly
+        role: 'doctor',
+        profileStatus: 'approved', // Auto-approve for immediate availability
+        isApproved: true, // Auto-approve doctors
+        profileCreatedAt: existingData.profileCreatedAt || Timestamp.now(),
+        profileUpdatedAt: Timestamp.now(),
+        approvedAt: existingData.approvedAt || Timestamp.now(),
+        available: true,
+        rating: existingData.rating || 4.5, // Default good rating
+        totalReviews: existingData.totalReviews || 0,
+        verified: true, // Auto-verify for demo
+        // Ensure displayName is consistent with name
+        displayName: doctorData.displayName || existingData.displayName || existingData.name,
+        name: doctorData.displayName || existingData.displayName || existingData.name
+      };
+
+      console.log('Final doctor profile to save:', doctorProfile);
+
+      await setDoc(docRef, doctorProfile, { merge: true });
+      
+      console.log('Doctor profile saved successfully');
+      return doctorProfile;
+    } catch (error) {
+      console.error('Error creating doctor profile:', error);
+      throw error;
+    }
+  },
+
+  // Get doctor profile by ID
+  async getDoctorProfile(doctorId) {
+    try {
+      const docRef = doc(db, 'users', doctorId);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists() && docSnap.data().role === 'doctor') {
+        return { id: docSnap.id, ...docSnap.data() };
+      } else {
+        throw new Error('Doctor profile not found');
+      }
+    } catch (error) {
+      console.error('Error fetching doctor profile:', error);
+      throw error;
+    }
+  },
+
+  // Update doctor availability
+  async updateDoctorAvailability(doctorId, available) {
+    try {
+      const docRef = doc(db, 'users', doctorId);
+      await updateDoc(docRef, {
+        available,
+        profileUpdatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error updating doctor availability:', error);
+      throw error;
+    }
+  },
+
+  // Get doctors by specialization
+  async getDoctorsBySpecialization(specialization) {
+    try {
+      const q = query(
+        collection(db, 'users'),
+        where('role', '==', 'doctor'),
+        where('specialization', '==', specialization),
+        where('profileStatus', '==', 'approved')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error fetching doctors by specialization:', error);
+      return [];
+    }
+  },
+
+  // Update doctor approval status (admin function)
+  async updateDoctorApproval(doctorId, isApproved) {
+    try {
+      const docRef = doc(db, 'users', doctorId);
+      await updateDoc(docRef, {
+        isApproved,
+        profileStatus: isApproved ? 'approved' : 'rejected',
+        approvedAt: isApproved ? Timestamp.now() : null,
+        profileUpdatedAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error updating doctor approval:', error);
+      throw error;
+    }
+  }
+};
