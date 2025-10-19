@@ -67,8 +67,17 @@ const Navbar = () => {
     { name: 'Patient Records', href: '/doctor/patient-records', icon: UserIcon }
   ];
 
+  const medicineSellerNavigation = [
+    { name: 'Dashboard', href: '/medicine-seller/dashboard', icon: UserIcon },
+    { name: 'Orders', href: '/medicine-seller/dashboard', icon: CalendarDaysIcon },
+  ];
+
   const currentNavigation = user 
-    ? (userProfile?.role === 'doctor' ? doctorNavigation : patientNavigation)
+    ? (userProfile?.role === 'doctor' 
+        ? doctorNavigation 
+        : userProfile?.role === 'medicine-seller'
+          ? medicineSellerNavigation
+          : patientNavigation)
     : publicNavigation;
 
   const isActivePath = (path) => {

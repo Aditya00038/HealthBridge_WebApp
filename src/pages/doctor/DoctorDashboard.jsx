@@ -94,9 +94,9 @@ const DoctorDashboard = () => {
     },
     {
       name: 'Patient Records',
-      description: 'Access patient medical records',
+      description: 'Access patient medical records and create prescriptions',
       icon: DocumentTextIcon,
-      href: '/doctor/patients',
+      href: '/doctor/patient-records',
       color: 'bg-gradient-to-r from-green-500 to-green-600',
     },
     {
