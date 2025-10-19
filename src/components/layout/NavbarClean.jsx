@@ -35,17 +35,28 @@ const NavbarClean = () => {
     { name: 'Dashboard', href: '/patient/dashboard' },
     { name: 'Book Appointment', href: '/appointment/book' },
     { name: 'AI Assistant', href: '/chatbot' },
+    { name: 'History', href: '/patient/history' },
     { name: 'Locate', href: '/locate' }
   ];
 
   const doctorNavigation = [
     { name: 'Dashboard', href: '/doctor/dashboard' },
-    { name: 'Patients', href: '/doctor/patients' },
-    { name: 'Appointments', href: '/doctor/appointments' }
+    { name: 'My Schedule', href: '/doctor/schedule' },
+    { name: 'Appointments', href: '/doctor/appointments' },
+    { name: 'Patient Records', href: '/doctor/patient-records' }
+  ];
+
+  const medicineSellerNavigation = [
+    { name: 'Dashboard', href: '/medicine-seller/dashboard' },
+    { name: 'Orders', href: '/medicine-seller/dashboard' }
   ];
 
   const currentNavigation = user 
-    ? (userProfile?.role === 'doctor' ? doctorNavigation : patientNavigation)
+    ? (userProfile?.role === 'doctor' 
+        ? doctorNavigation 
+        : userProfile?.role === 'medicine-seller'
+          ? medicineSellerNavigation
+          : patientNavigation)
     : publicNavigation;
 
   const isActivePath = (path) => {
@@ -87,11 +98,11 @@ const NavbarClean = () => {
             {user ? (
               <>
                 <Link
-                  to={userProfile?.role === 'doctor' ? '/doctor/profile' : '/patient/profile'}
+                  to="/profile/settings"
                   className="flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900"
                 >
                   <UserCircleIcon className="w-5 h-5" />
-                  <span>{userProfile?.displayName || 'Profile'}</span>
+                  <span>{userProfile?.name || userProfile?.displayName || 'Profile'}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -155,11 +166,11 @@ const NavbarClean = () => {
               {user ? (
                 <>
                   <Link
-                    to={userProfile?.role === 'doctor' ? '/doctor/profile' : '/patient/profile'}
+                    to="/profile/settings"
                     onClick={() => setMobileMenuOpen(false)}
                     className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    Profile
+                    Profile Settings
                   </Link>
                   <button
                     onClick={() => {
