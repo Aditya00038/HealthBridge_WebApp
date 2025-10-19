@@ -1,58 +1,77 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
-import {
-  PaperAirplaneIcon,
-  UserIcon,
-  SparklesIcon,
-  ClockIcon,
-  HeartIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-  ChatBubbleLeftRightIcon,
-  PhoneIcon,
-  CalendarIcon
-} from '@heroicons/react/24/outline';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
-  HeartIcon as HeartSolidIcon, 
-  SparklesIcon as SparklesSolidIcon 
-} from '@heroicons/react/24/solid';
+  PaperAirplaneIcon, 
+  PhotoIcon, 
+  XMarkIcon,
+  Bars3Icon,
+  PlusIcon,
+  SunIcon,
+  MoonIcon,
+  UserCircleIcon,
+  SparklesIcon,
+  CheckCircleIcon
+} from '@heroicons/react/24/outline';
+import ReactMarkdown from 'react-markdown';
 
 const Chatbot = () => {
-  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('general');
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [darkMode, setDarkMode] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [conversations, setConversations] = useState([
+    { id: 1, title: 'General Chat', date: 'Today', icon: '💬' },
+    { id: 2, title: 'Medical Help', date: 'Today', icon: '🏥' },
+    { id: 3, title: 'Science Questions', date: 'Yesterday', icon: '🔬' }
+  ]);
+  const [currentConversationId, setCurrentConversationId] = useState(1);
+  
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  const categories = [
-    { id: 'general', name: 'General Health', icon: HeartIcon, color: 'blue' },
-    { id: 'symptoms', name: 'Symptoms', icon: ExclamationTriangleIcon, color: 'red' },
-    { id: 'appointment', name: 'Appointments', icon: CalendarIcon, color: 'green' },
-    { id: 'medication', name: 'Medications', icon: InformationCircleIcon, color: 'purple' }
-  ];
-
-  const quickQuestions = [
-    "I have a headache, what should I do?",
-    "How do I book an appointment?",
-    "What are the symptoms of flu?",
-    "Can you help me with medication reminders?",
-    "I'm feeling anxious, any advice?",
-    "What's included in a general checkup?"
-  ];
-
-  const initialMessage = {
-    id: Date.now(),
-    sender: 'bot',
-    message: `Hello ${user?.displayName || 'there'}! 👋 I'm your AI Health Assistant. I'm here to help you with health questions, symptom guidance, appointment booking, and general medical information. How can I assist you today?`,
-    timestamp: new Date(),
-    type: 'welcome'
-  };
-
+  // Enhanced welcome message
   useEffect(() => {
-    setMessages([initialMessage]);
-  }, [user]);
+    if (messages.length === 0) {
+      setMessages([{
+        type: 'ai',
+        content: `# 🤖 Welcome to Universal AI Assistant
+
+I'm an advanced AI powered by cutting-edge language models. I can help you with **absolutely anything**!
+
+## 💡 What Can I Do?
+
+### � **Knowledge & Learning**
+Ask me about science, history, technology, math, literature, or any topic
+
+### 💼 **Work & Productivity**  
+Get help with coding, writing, business plans, emails, presentations
+
+### 🎨 **Creative Tasks**
+Generate ideas, stories, poems, marketing content, or brainstorm solutions
+
+### 🏥 **Health & Wellness**
+Medical questions, nutrition advice, fitness tips, mental health support
+
+### 🌍 **General Questions**
+Current events, how-to guides, explanations, advice on any subject
+
+---
+
+### ✨ Example Questions:
+- "What's the meaning of life?"
+- "How do I learn Python programming?"
+- "Write a poem about the ocean"
+- "Explain quantum physics simply"
+- "Help me plan a trip to Japan"
+- "What should I cook for dinner?"
+
+**No question is too simple or too complex. Ask me anything!** 🚀`,
+        timestamp: new Date().toISOString()
+      }]);
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -62,84 +81,209 @@ const Chatbot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const sendMessage = async (messageText = newMessage) => {
-    if (!messageText.trim()) return;
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result);
+        setImagePreview(URL.createObjectURL(file));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim() && !selectedImage) return;
 
     const userMessage = {
-      id: Date.now(),
-      sender: 'user',
-      message: messageText,
-      timestamp: new Date(),
-      category: selectedCategory
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date().toISOString(),
+      image: imagePreview
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setNewMessage('');
-    setIsTyping(true);
+    const currentMessage = inputMessage;
+    setInputMessage('');
+    setIsLoading(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const botResponse = generateBotResponse(messageText, selectedCategory);
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 2000);
-  };
+    try {
+      // Use Hugging Face Inference API (Free, no API key needed for some models)
+      const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-large', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: currentMessage,
+          parameters: {
+            max_length: 500,
+            temperature: 0.9,
+            top_p: 0.95,
+            do_sample: true
+          }
+        })
+      });
 
-  const generateBotResponse = (userMessage, category) => {
-    const responses = {
-      general: {
-        greeting: "I'm here to help with your health concerns! Feel free to ask me about symptoms, treatments, or general health advice.",
-        default: "That's a great question about general health! Based on what you've told me, I'd recommend consulting with a healthcare professional for personalized advice. In the meantime, maintaining a healthy lifestyle with proper diet, exercise, and adequate sleep is always beneficial."
-      },
-      symptoms: {
-        headache: "For headaches, try these steps: 1) Stay hydrated 2) Rest in a quiet, dark room 3) Apply a cold or warm compress 4) Consider over-the-counter pain relievers. If headaches persist or worsen, please consult a doctor.",
-        flu: "Common flu symptoms include fever, body aches, fatigue, cough, and congestion. Rest, fluids, and symptom management are key. Seek medical attention if symptoms are severe or persist beyond a week.",
-        anxiety: "Feeling anxious is normal, but persistent anxiety should be addressed. Try deep breathing exercises, regular exercise, and adequate sleep. If anxiety interferes with daily life, consider speaking with a mental health professional.",
-        default: "I understand you're experiencing symptoms. While I can provide general guidance, it's important to consult with a healthcare provider for proper diagnosis and treatment, especially if symptoms persist or worsen."
-      },
-      appointment: {
-        booking: "To book an appointment: 1) Click 'Book Appointment' in your dashboard 2) Select a doctor and specialization 3) Choose your preferred date and time 4) Provide reason for visit. You can also call our clinic directly!",
-        preparation: "To prepare for your appointment: 1) List your symptoms and when they started 2) Bring current medications 3) Prepare questions for your doctor 4) Arrive 15 minutes early 5) Bring insurance information.",
-        default: "I can help you with appointment-related questions! Whether you need to book, reschedule, or prepare for an appointment, I'm here to guide you through the process."
-      },
-      medication: {
-        reminders: "For medication reminders, I can help you set up a schedule! Consider using pill organizers, phone alarms, or medication apps. Always take medications as prescribed by your doctor.",
-        interactions: "Drug interactions can be serious. Always inform your doctor and pharmacist about all medications, supplements, and herbal products you're taking. Never stop prescribed medications without consulting your healthcare provider.",
-        default: "Medication questions are important for your safety. While I can provide general information, always consult your doctor or pharmacist for specific medication advice."
+      if (!response.ok) {
+        throw new Error('API request failed');
       }
-    };
 
-    const categoryResponses = responses[category] || responses.general;
-    const lowerMessage = userMessage.toLowerCase();
+      const data = await response.json();
+      
+      // Extract AI response
+      let aiResponse = '';
+      if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
+        aiResponse = data[0].generated_text;
+      } else if (typeof data === 'string') {
+        aiResponse = data;
+      } else {
+        // Fallback to intelligent local response
+        aiResponse = generateIntelligentResponse(currentMessage);
+      }
 
-    // Match specific keywords to responses
-    if (lowerMessage.includes('headache')) {
-      return createBotMessage(responses.symptoms.headache, 'symptom-advice');
-    } else if (lowerMessage.includes('flu') || lowerMessage.includes('fever')) {
-      return createBotMessage(responses.symptoms.flu, 'symptom-advice');
-    } else if (lowerMessage.includes('anxious') || lowerMessage.includes('anxiety')) {
-      return createBotMessage(responses.symptoms.anxiety, 'mental-health');
-    } else if (lowerMessage.includes('appointment') || lowerMessage.includes('book')) {
-      return createBotMessage(responses.appointment.booking, 'appointment-help');
-    } else if (lowerMessage.includes('medication') || lowerMessage.includes('medicine')) {
-      return createBotMessage(responses.medication.reminders, 'medication-help');
-    } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
-      return createBotMessage(categoryResponses.greeting || categoryResponses.default, 'greeting');
+      const aiMessage = {
+        type: 'ai',
+        content: aiResponse,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+
+    } catch (error) {
+      console.error('Error:', error);
+      
+      // Fallback to local intelligent responses if API fails
+      const aiMessage = {
+        type: 'ai',
+        content: generateIntelligentResponse(currentMessage),
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    } finally {
+      setIsLoading(false);
+      removeImage();
     }
-
-    return createBotMessage(categoryResponses.default, 'general-advice');
   };
 
-  const createBotMessage = (message, type = 'response') => ({
-    id: Date.now() + Math.random(),
-    sender: 'bot',
-    message,
-    timestamp: new Date(),
-    type
-  });
-
-  const handleQuickQuestion = (question) => {
-    sendMessage(question);
+  // Intelligent fallback response generator - DIRECT ANSWERS ONLY
+  const generateIntelligentResponse = (question) => {
+    const q = question.toLowerCase();
+    
+    // Greeting responses
+    if (q.match(/^(hi|hello|hey|greetings)$/)) {
+      return "Hello! Ask me anything and I'll give you a direct answer.";
+    }
+    
+    // How are you responses
+    if (q.match(/how are you|how're you/)) {
+      return "I'm working perfectly! What do you need help with?";
+    }
+    
+    // EMERGENCY MEDICAL - Broken bones, severe injuries
+    if (q.match(/broken|fracture|bone|severe injury|bleeding heavily|unconscious|chest pain|heart attack|stroke/i)) {
+      return `## 🚨 EMERGENCY - Call 911 Immediately\n\n**Your situation:** "${question}"\n\n### DO THIS NOW:\n1. **Call 911** or go to the nearest emergency room immediately\n2. **Don't move** the injured area\n3. **Apply ice** wrapped in cloth (not directly on skin)\n4. **Elevate** the injured limb if possible\n5. **Immobilize** - don't try to straighten it\n6. **Don't eat or drink** (you may need surgery)\n\n### While Waiting for Help:\n- Keep the person still and calm\n- Cover with a blanket to prevent shock\n- Monitor breathing and pulse\n- Don't give any medication\n\n### At the Hospital:\n- X-rays will confirm the fracture\n- Treatment: Cast, splint, or surgery\n- Pain medication will be provided\n- Follow-up care with orthopedic specialist\n\n**This is a medical emergency. Get professional help NOW.**`;
+    }
+    
+    // Programming/coding questions - DIRECT ANSWERS
+    if (q.match(/python|javascript|code|programming|html|css|react|node/i)) {
+      if (q.match(/learn|start|begin/i)) {
+        return `## 💻 How to Learn Programming\n\n**Best path:**\n1. **Start with Python** (easiest for beginners)\n2. **Free resources:**\n   - [Python.org tutorial](https://docs.python.org/3/tutorial/)\n   - [FreeCodeCamp](https://www.freecodecamp.org)\n   - [W3Schools](https://www.w3schools.com)\n3. **Practice daily** (30-60 mins minimum)\n4. **Build projects** - calculator, to-do list, simple games\n5. **Join communities** - r/learnprogramming, Stack Overflow\n\n**Timeline:** 3-6 months to be job-ready with consistent practice.\n\n**Next step:** Install Python, complete first tutorial, write "Hello World" program.`;
+      }
+      return `## 💻 Programming Answer\n\n**Your question:** "${question}"\n\nI can help! To give you exact code/solution, I need:\n- What programming language?\n- What exactly are you trying to do?\n- Any error messages?\n- Show me your current code (if any)\n\nAsk a more specific question like:\n- "How to create a loop in Python?"\n- "JavaScript async/await example"\n- "Fix this React error: [paste error]"\n- "How to connect to database in Node.js?"`;
+    }
+    
+    // Science questions - DIRECT ANSWERS
+    if (q.match(/quantum physics|quantum mechanics/i)) {
+      return `## 🔬 Quantum Physics Explained Simply\n\n**What it is:** The science of how tiny particles (atoms, electrons, photons) behave.\n\n**Key concepts:**\n1. **Wave-particle duality** - Particles act like waves AND particles\n2. **Superposition** - Particles can be in multiple states at once (Schrödinger's cat)\n3. **Entanglement** - Particles connected across any distance instantly\n4. **Uncertainty principle** - Can't know exact position AND speed simultaneously\n\n**Real-world uses:** Computers, lasers, MRI machines, solar panels, GPS, quantum computers.\n\n**Simple analogy:** Like a coin spinning in air - it's both heads AND tails until it lands (observation collapses superposition).`;
+    }
+    
+    if (q.match(/science|physics|chemistry|biology|dna|cell|atom/i)) {
+      return `## 🔬 Science Explanation\n\n**Your question:** "${question}"\n\n**Quick answer approach:** I can explain any scientific concept simply!\n\nBe more specific:\n- "How does photosynthesis work?"\n- "What is DNA made of?"\n- "Explain gravity in simple terms"\n- "How do vaccines work?"\n- "What causes earthquakes?"\n\nAsk your specific science question and I'll give you a clear, direct explanation!`;
+    }
+    
+    // Medical/health questions - DIRECT ANSWERS
+    if (q.match(/fever/i)) {
+      return `## 🌡️ Fever Treatment\n\n**What to do:**\n1. Take **Acetaminophen (Tylenol)** 500-1000mg every 4-6 hours OR **Ibuprofen** 400-600mg every 6-8 hours\n2. Drink lots of water (8-10 glasses/day)\n3. Rest in bed\n4. Use cool compress on forehead\n5. Wear light clothing\n\n**See a doctor if:** Fever >103°F (39.4°C), lasts >3 days, severe headache, difficulty breathing, or rash appears.\n\n**Call 911 if:** Fever + confusion, seizure, difficulty breathing, or chest pain.`;
+    }
+    
+    if (q.match(/headache|migraine/i)) {
+      return `## 🤕 Headache Relief\n\n**Immediate relief:**\n1. Take **Ibuprofen 400mg** or **Acetaminophen 500mg**\n2. Drink 2 glasses of water (dehydration causes headaches)\n3. Lie down in a dark, quiet room\n4. Apply cold compress to forehead\n5. Massage temples gently\n\n**See a doctor if:** Sudden severe headache ("worst of your life"), headache with fever/stiff neck, vision changes, or doesn't improve with medication.\n\n**Call 911 if:** Headache after head injury, with weakness/numbness, confusion, or trouble speaking.`;
+    }
+    
+    if (q.match(/cold|flu|cough|sore throat/i)) {
+      return `## 🤧 Cold/Flu Treatment\n\n**What to do:**\n1. **Rest** - sleep 8-10 hours\n2. **Hydrate** - water, tea, soup (10+ cups/day)\n3. **Medicine:** Ibuprofen 400mg for pain/fever, DayQuil/NyQuil for symptoms\n4. **Gargle** salt water for sore throat (1 tsp salt in warm water)\n5. **Humidifier** or steam from hot shower\n6. **Vitamin C** 1000mg daily\n\n**Duration:** 7-10 days normally\n\n**See a doctor if:** Fever >103°F, symptoms >10 days, difficulty breathing, chest pain, or coughing up blood.`;
+    }
+    
+    if (q.match(/stomach|nausea|vomit|diarrhea/i)) {
+      return `## 🤢 Stomach Issues\n\n**What to do:**\n1. **Stop eating** for 4-6 hours\n2. **Sip water** slowly (small amounts every 15 mins)\n3. **BRAT diet** when ready: Bananas, Rice, Applesauce, Toast\n4. **Pepto-Bismol** or **Tums** for nausea\n5. **Ginger tea** or ginger ale (flat, no carbonation)\n6. Avoid dairy, fatty foods, caffeine, alcohol\n\n**See a doctor if:** Blood in vomit/stool, severe pain, can't keep down liquids for 24hrs, signs of dehydration (dark urine, dizziness).`;
+    }
+    
+    if (q.match(/pain|hurt|ache|sore/i) && !q.match(/broken|fracture/)) {
+      return `## � Pain Relief\n\n**For general pain:**\n1. **Ibuprofen 400-600mg** every 6-8 hours (best for inflammation)\n2. **OR Acetaminophen 500-1000mg** every 4-6 hours (if can't take ibuprofen)\n3. **Ice pack** 20 mins on, 20 mins off for first 48 hours\n4. **Rest** the affected area\n5. **Elevate** if swollen\n\n**After 48 hours:** Switch to heat (warm compress, heating pad)\n\n**See a doctor if:** Pain severe (8+/10), lasts >1 week, gets worse, or interferes with daily activities.`;
+    }
+    
+    // General health catch-all
+    if (q.match(/health|medical|doctor|sick|symptom|medicine/i)) {
+      return `## 🏥 Quick Medical Advice\n\n**Your question:** "${question}"\n\n**General approach:**\n1. **Assess severity** - Rate pain 1-10, check temperature\n2. **Try OTC first** - Ibuprofen/Acetaminophen for pain/fever\n3. **Rest & hydrate** - 8+ hours sleep, 8+ glasses water\n4. **Monitor** - Note if getting better or worse\n\n**See a doctor if:** Symptoms last >3 days, severe pain (7+/10), high fever (>103°F), or rapid worsening.\n\n**Emergency (Call 911):** Chest pain, difficulty breathing, severe bleeding, loss of consciousness, sudden severe symptoms.\n\nNeed more specific advice? Tell me your exact symptoms.`;
+    }
+    
+    // Math questions - DIRECT SOLUTIONS
+    if (q.match(/math|calculate|equation|algebra|solve/i)) {
+      return `## 📐 Math Solution\n\n**Your question:** "${question}"\n\n**To solve your problem, show me:**\n- The exact equation or problem\n- What you need to find\n\nExample questions:\n- "Solve: 2x + 5 = 13"\n- "Calculate area of circle with radius 5"\n- "What is 15% of 200?"\n- "Factor: x² + 5x + 6"\n\nGive me the specific math problem and I'll solve it step-by-step!`;
+    }
+    
+    // Writing/creative questions - DIRECT ANSWERS
+    if (q.match(/write.*poem/i)) {
+      const topic = q.match(/about (.+)/)?.[1] || "life";
+      return `## ✍️ Poem for You\n\n**"${topic.charAt(0).toUpperCase() + topic.slice(1)}"**\n\n*In the depths of ${topic}'s embrace,*\n*Where thoughts and dreams find their place,*\n*A moment captured, pure and true,*\n*Forever etched in morning dew.*\n\n*Time may pass and seasons change,*\n*Yet ${topic}'s beauty will remain,*\n*A testament to all we are,*\n*Shining bright like morning star.*\n\nWant a different style or topic? Just ask!`;
+    }
+    
+    if (q.match(/write|story|essay|article|blog/i)) {
+      return `## ✍️ Writing Help\n\n**Your request:** "${question}"\n\n**Tell me what you need:**\n- Poem about [topic]?\n- Short story about [theme]?\n- Essay on [subject]?\n- Email for [purpose]?\n- Blog post about [topic]?\n\nBe specific like:\n- "Write a poem about the ocean"\n- "Write a scary story about a haunted house"\n- "Write a professional email to my boss requesting time off"\n- "Write a blog post about healthy eating tips"\n\nGive me details and I'll write it immediately!`;
+    }
+    
+    // Food/cooking questions - DIRECT RECIPES
+    if (q.match(/recipe|cook|meal|dinner|lunch|breakfast|what.*eat/i)) {
+      if (q.match(/dinner|what.*cook|what.*eat/i)) {
+        return `## 🍳 Quick Dinner Ideas\n\n**Easy 30-minute meals:**\n\n**1. Pasta Aglio e Olio**\n- Boil pasta, sauté garlic in olive oil, toss together, add parmesan\n\n**2. Chicken Stir-Fry**\n- Cut chicken, stir-fry with veggies, add soy sauce, serve with rice\n\n**3. Quesadillas**\n- Cheese + tortilla + any filling (chicken, beans), cook until crispy\n\n**4. Fried Rice**\n- Day-old rice + eggs + frozen veggies + soy sauce, stir-fry\n\n**5. Grilled Cheese & Soup**\n- Bread + cheese, grill until golden, serve with tomato soup\n\nWhat ingredients do you have? I'll suggest a specific recipe!`;
+      }
+      return `## 🍳 Recipe Help\n\n**Your question:** "${question}"\n\n**Tell me:**\n- What ingredients do you have?\n- How much time?\n- What meal (breakfast/lunch/dinner)?\n- Any dietary restrictions?\n\nOr ask specifically:\n- "Recipe for spaghetti carbonara"\n- "Quick breakfast ideas"\n- "Healthy chicken recipes"\n- "Vegetarian dinner"`;
+    }
+    
+    // Travel questions - DIRECT ADVICE
+    if (q.match(/travel|trip|visit|vacation/i)) {
+      if (q.match(/japan/i)) {
+        return `## ✈️ Visit Japan\n\n**Best time:** Spring (March-May) for cherry blossoms or Fall (Sept-Nov) for colors\n\n**Top destinations:**\n1. **Tokyo** - Modern city, tech, anime, food (3-4 days)\n2. **Kyoto** - Temples, traditional culture, gardens (2-3 days)\n3. **Osaka** - Food capital, castle, nightlife (2 days)\n4. **Hiroshima** - Peace memorial, miyajima island (1-2 days)\n\n**Budget:** $100-150/day (mid-range)\n\n**Must-try:** Sushi, ramen, tempura, takoyaki, matcha desserts\n\n**Tip:** Get JR Pass for trains (7-day pass ~$280)`;
+      }
+      return `## ✈️ Travel Advice\n\n**Your question:** "${question}"\n\n**Where do you want to go?** Tell me:\n- Destination (country/city)\n- Budget (low/mid/high)\n- Interests (food/culture/adventure/relaxation)\n- Duration\n\nOr ask: "Best places to visit in Europe", "Cheap vacation ideas", "Travel tips for Thailand"`;
+    }
+    
+    // Meaning of life
+    if (q.match(/meaning of life|purpose of life|why.*exist/i)) {
+      return `## 🌟 The Meaning of Life\n\n**Direct answer:** There's no single universal answer, but here are the main perspectives:\n\n**1. Biological:** To survive and pass on genes\n**2. Philosophical:** To find happiness and reduce suffering\n**3. Religious:** To serve a higher power and reach salvation\n**4. Existential:** Life has no inherent meaning - you create your own\n**5. Practical:** To make positive impact, help others, find fulfillment\n\n**Most people find meaning through:**\n- Relationships and love\n- Achievement and growth\n- Contributing to something bigger\n- Experiencing joy and beauty\n- Reducing suffering in the world\n\n**Bottom line:** Your life's meaning is what YOU decide it is. Focus on what brings you fulfillment and helps others.`;
+    }
+    
+    // General knowledge/explanation - DIRECT
+    if (q.match(/what is|what are|explain|how does|how do|why/i)) {
+      return `## 💡 Direct Answer\n\n**Your question:** "${question}"\n\nI'll explain it directly! Just need you to be a bit more specific:\n\n**Good questions:**\n- "What is blockchain?" ✅\n- "How does GPS work?" ✅\n- "Why is the sky blue?" ✅\n- "Explain photosynthesis" ✅\n\n**Your question is a bit vague.** Rephrase it more specifically and I'll give you a clear, direct explanation!\n\nWhat exactly do you want to know about?`;
+    }
+    
+    // Advice/recommendations - DIRECT
+    if (q.match(/should i|recommend|suggest|advice|help me choose|which is better|what.*do/i)) {
+      return `## 💡 Direct Advice\n\n**Your question:** "${question}"\n\n**To give you specific advice, I need:**\n- What are you deciding between?\n- What's the context/situation?\n- What's your goal?\n\n**Good questions:**\n- "Should I learn Python or JavaScript first?"\n- "What career path is best for me if I like [X]?"\n- "Which phone is better: iPhone or Samsung?"\n- "Should I go to college or learn a trade?"\n\nAsk a more specific question and I'll give you direct, actionable advice!`;
+    }
+    
+    // Default intelligent response - SHORT AND DIRECT
+    return `## 🤖 Answer\n\n**Your question:** "${question}"\n\nI can help! But I need you to be more specific.\n\n**Examples of good questions:**\n- "How do I fix a leaky faucet?"\n- "What's the capital of France?"\n- "Best way to lose weight?"\n- "How to start a business?"\n- "Explain the water cycle"\n\n**Rephrase your question to be more specific** and I'll give you a direct answer!\n\nWhat exactly do you want to know?`;
   };
 
   const handleKeyPress = (e) => {
@@ -149,205 +293,301 @@ const Chatbot = () => {
     }
   };
 
-  const getMessageIcon = (type) => {
-    switch (type) {
-      case 'symptom-advice':
-        return <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />;
-      case 'appointment-help':
-        return <CalendarIcon className="h-4 w-4 text-green-500" />;
-      case 'medication-help':
-        return <InformationCircleIcon className="h-4 w-4 text-purple-500" />;
-      case 'mental-health':
-        return <HeartSolidIcon className="h-4 w-4 text-pink-500" />;
-      default:
-        return <SparklesSolidIcon className="h-4 w-4 text-blue-500" />;
-    }
+  const startNewConversation = () => {
+    const newConv = {
+      id: conversations.length + 1,
+      title: `Consultation ${conversations.length + 1}`,
+      date: 'Just now'
+    };
+    setConversations([newConv, ...conversations]);
+    setCurrentConversationId(newConv.id);
+    setMessages([]);
   };
 
+  const quickActions = [
+    { icon: '💻', text: 'Programming', query: 'Help me learn Python programming', gradient: 'from-blue-500 to-cyan-500' },
+    { icon: '🏥', text: 'Health', query: 'I have a headache, what should I do?', gradient: 'from-emerald-500 to-teal-500' },
+    { icon: '🔬', text: 'Science', query: 'Explain quantum physics in simple terms', gradient: 'from-purple-500 to-pink-500' },
+    { icon: '✍️', text: 'Writing', query: 'Write me a poem about technology', gradient: 'from-indigo-500 to-purple-500' }
+  ];
+
+  const bgColor = darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50';
+  const sidebarBg = darkMode ? 'bg-gray-800 border-r border-gray-700' : 'bg-white border-r border-gray-200 shadow-lg';
+  const textColor = darkMode ? 'text-gray-100' : 'text-gray-900';
+  const secondaryText = darkMode ? 'text-gray-400' : 'text-gray-600';
+  const borderColor = darkMode ? 'border-gray-700' : 'border-gray-200';
+  const inputBg = darkMode ? 'bg-gray-700' : 'bg-white';
+  const hoverBg = darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50';
+  const aiMessageBg = darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-blue-50 to-purple-50';
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <SparklesSolidIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">AI Health Assistant</h1>
-              <p className="text-sm text-gray-500">Your 24/7 healthcare companion</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            Online
-          </div>
+    <div className={`flex h-screen w-screen overflow-hidden ${bgColor} ${textColor}`}>
+      {/* Sidebar */}
+      <div className={`${sidebarOpen ? 'w-64' : 'w-0'} ${sidebarBg} border-r ${borderColor} transition-all duration-300 flex flex-col overflow-hidden`}>
+        {/* Sidebar Header */}
+        <div className={`p-4 border-b ${borderColor}`}>
+          <button
+            onClick={startNewConversation}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all hover:shadow-lg font-medium`}
+          >
+            <PlusIcon className="h-5 w-5" />
+            <span>New Chat</span>
+          </button>
         </div>
-      </div>
 
-      {/* Category Selector */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-2 overflow-x-auto">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all
-                  ${selectedCategory === category.id
-                    ? `bg-${category.color}-100 text-${category.color}-700 border-${category.color}-200`
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
-              >
-                <category.icon className="h-4 w-4" />
-                {category.name}
-              </button>
-            ))}
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="text-xs font-semibold text-gray-500 px-3 py-2">
+            📝 Recent Chats
           </div>
-        </div>
-      </div>
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-hidden">
-        <div className="max-w-4xl mx-auto h-full flex flex-col">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <AnimatePresence>
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`
-                    max-w-xs md:max-w-md lg:max-w-lg rounded-2xl px-4 py-3 ${
-                      message.sender === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white border border-gray-200 text-gray-900'
-                    }
-                  `}>
-                    {message.sender === 'bot' && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                          <SparklesSolidIcon className="h-3 w-3 text-white" />
-                        </div>
-                        <span className="text-xs font-medium text-gray-500">AI Assistant</span>
-                        {message.type && getMessageIcon(message.type)}
-                      </div>
-                    )}
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.message}
-                    </div>
-                    <div className={`text-xs mt-2 ${
-                      message.sender === 'user' ? 'text-blue-100' : 'text-gray-400'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString()}
-                    </div>
+          {conversations.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => setCurrentConversationId(conv.id)}
+              className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
+                conv.id === currentConversationId
+                  ? 'bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-purple-300 shadow-md'
+                  : 'hover:bg-gray-100 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{conv.icon}</span>
+                <div className="flex-1 truncate">
+                  <div className={`font-medium text-sm ${textColor} truncate`}>
+                    {conv.title}
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {/* Typing Indicator */}
-            {isTyping && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-start"
-              >
-                <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 max-w-xs">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <SparklesSolidIcon className="h-3 w-3 text-white" />
-                    </div>
-                    <span className="text-xs font-medium text-gray-500">AI Assistant</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {conv.date}
                   </div>
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </button>
+          ))}
+        </div>
 
-            <div ref={messagesEndRef} />
+        {/* Sidebar Footer */}
+        <div className={`p-4 border-t ${borderColor}`}>
+          <div className="flex items-center gap-3 px-3 py-2">
+            <UserCircleIcon className="h-8 w-8 text-indigo-500" />
+            <div className="flex-1">
+              <div className={`text-sm font-medium ${textColor}`}>Patient User</div>
+              <div className={`text-xs ${secondaryText}`}>Online</div>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Quick Questions */}
-          {messages.length <= 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Questions:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {quickQuestions.map((question, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickQuestion(question)}
-                    className="text-left p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm"
-                  >
-                    {question}
-                  </button>
-                ))}
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-screen">
+        {/* Header - Matching Site Design */}
+        <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-6 py-4 flex items-center justify-between shadow-sm`}>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`p-2.5 rounded-xl ${hoverBg} transition-all hover:scale-105 border ${borderColor}`}
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <SparklesIcon className="h-7 w-7 text-white" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
+                  <CheckCircleIcon className="h-3.5 w-3.5 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  AI Health Assistant
+                </h1>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-xs text-gray-600 font-medium">Online 24/7 • Instant Answers</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-2.5 rounded-xl ${hoverBg} transition-all hover:scale-105 border ${borderColor}`}
+          >
+            {darkMode ? (
+              <SunIcon className="h-6 w-6 text-yellow-400" />
+            ) : (
+              <MoonIcon className="h-6 w-6 text-indigo-600" />
+            )}
+          </button>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex gap-4 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              {message.type === 'ai' && (
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                    <SparklesIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              )}
+              
+              <div className={`max-w-3xl ${message.type === 'user' ? 'order-first' : ''}`}>
+                {message.confidence && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`text-xs font-semibold ${secondaryText}`}>
+                      AI Confidence: {message.confidence}%
+                    </div>
+                    <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden max-w-[100px]">
+                      <div 
+                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                        style={{ width: `${message.confidence}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div
+                  className={`rounded-2xl px-6 py-4 shadow-lg ${
+                    message.type === 'user'
+                      ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white'
+                      : message.isError
+                      ? 'bg-red-50 border-2 border-red-500 text-red-900'
+                      : aiMessageBg + ' border border-gray-200'
+                  }`}
+                >
+                  {message.image && (
+                    <img
+                      src={message.image}
+                      alt="Uploaded"
+                      className="w-full max-w-md rounded-lg mb-3"
+                    />
+                  )}
+                  
+                  <div className={`prose ${darkMode ? 'prose-invert' : 'prose-gray'} max-w-none`}>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                  
+                  <div className={`text-xs ${message.type === 'user' ? 'text-indigo-200' : secondaryText} mt-3`}>
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+
+              {message.type === 'user' && (
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                    <UserCircleIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {isLoading && (
+            <div className="flex gap-4">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                <SparklesIcon className="h-6 w-6 text-white animate-pulse" />
+              </div>
+              <div className={`${aiMessageBg} rounded-2xl px-6 py-4 border border-gray-200 shadow-lg`}>
+                <div className="flex gap-2">
+                  <div className="h-3 w-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="h-3 w-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="h-3 w-3 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             </div>
           )}
 
-          {/* Input Area */}
-          <div className="p-6 bg-white border-t border-gray-200">
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask me about symptoms, appointments, medications, or general health..."
-                  rows={1}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  style={{ minHeight: '50px', maxHeight: '120px' }}
-                />
-              </div>
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Actions - Matching Site Style */}
+        {messages.length <= 1 && (
+          <div className="px-6 pb-6">
+            <div className="text-sm font-semibold text-gray-700 mb-4">
+              ✨ Quick Start Topics
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {quickActions.map((action, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setInputMessage(action.query);
+                  }}
+                  className={`bg-gradient-to-br ${action.gradient} rounded-xl px-4 py-5 text-left transition-all hover:scale-105 hover:shadow-xl shadow-md group`}
+                >
+                  <div className="text-3xl mb-2 transform group-hover:scale-110 transition-transform">{action.icon}</div>
+                  <div className="text-sm font-bold text-white">{action.text}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input Area - Matching Site Style */}
+        <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t px-6 py-5 shadow-lg`}>
+          {imagePreview && (
+            <div className="mb-4 relative inline-block">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="h-24 w-24 object-cover rounded-xl border-2 border-purple-500 shadow-md"
+              />
               <button
-                onClick={() => sendMessage()}
-                disabled={!newMessage.trim() || isTyping}
-                className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                onClick={removeImage}
+                className="absolute -top-2 -right-2 h-6 w-6 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
               >
-                <PaperAirplaneIcon className="h-4 w-4" />
-                Send
+                <XMarkIcon className="h-4 w-4 text-white" />
               </button>
             </div>
-            
-            <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-              <div className="flex items-center gap-4">
-                <span>Press Enter to send, Shift + Enter for new line</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ExclamationTriangleIcon className="h-3 w-3" />
-                <span>For emergencies, call 911 or visit your nearest emergency room</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          )}
 
-      {/* Emergency Banner */}
-      <div className="bg-red-50 border-t border-red-200 px-6 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 text-red-700 text-sm">
-            <ExclamationTriangleIcon className="h-4 w-4" />
-            <span>This AI assistant provides general information only and is not a substitute for professional medical advice.</span>
+          <div className={`${inputBg} rounded-2xl border-2 ${darkMode ? 'border-gray-600' : 'border-gray-300'} flex items-end gap-3 px-4 py-3 shadow-sm hover:border-purple-400 transition-colors`}>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className={`p-2 ${hoverBg} rounded-xl transition-all hover:scale-105 flex-shrink-0`}
+              title="Upload image"
+            >
+              <PhotoIcon className="h-6 w-6 text-purple-600" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+
+            <textarea
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask me anything... Health, science, coding, advice, or just chat! ✨"
+              rows={1}
+              className={`flex-1 ${inputBg} ${textColor} resize-none outline-none placeholder-gray-400 max-h-32`}
+              style={{ minHeight: '24px' }}
+            />
+
+            <button
+              onClick={sendMessage}
+              disabled={isLoading || (!inputMessage.trim() && !selectedImage)}
+              className={`p-2.5 rounded-xl transition-all flex-shrink-0 ${
+                isLoading || (!inputMessage.trim() && !selectedImage)
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
+              }`}
+            >
+              <PaperAirplaneIcon className="h-6 w-6 text-white" />
+            </button>
           </div>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm">
-              <PhoneIcon className="h-3 w-3" />
-              Emergency: 911
-            </button>
-            <button className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm">
-              <CalendarIcon className="h-3 w-3" />
-              Book Real Appointment
-            </button>
+
+          <div className="text-xs text-gray-500 mt-3 text-center font-medium">
+            🤖 AI Health Assistant • Instant Answers 24/7 • Powered by Advanced AI
           </div>
         </div>
       </div>

@@ -1,0 +1,59 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-slate-200;
+  }
+  
+  html {
+    @apply scroll-smooth antialiased;
+  }
+  
+  body {
+    @apply bg-slate-50/50 text-slate-800 font-sans;
+  }
+  
+  *:focus-visible {
+    @apply outline-none ring-2 ring-indigo-400/50 ring-offset-2;
+  }
+  
+  ::selection {
+    @apply bg-indigo-100 text-indigo-900;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-slate-900;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 font-medium rounded-xl transition-all duration-200;
+  }
+  
+  .btn-primary {
+    @apply btn bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl border border-slate-100 transition-all;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl;
+  }
+}
+
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}

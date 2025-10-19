@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   CalendarDaysIcon, 
   VideoCameraIcon, 
@@ -13,14 +14,18 @@ import {
   PlusIcon,
   EyeIcon,
   SparklesIcon,
-  StarIcon
+  StarIcon,
+  MapPinIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '../../contexts/AuthContext';
-import { appointmentServices } from '../../services/firebaseServices';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { appointmentServices } from '@/services/firebaseServices';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const PatientDashboard = () => {
   const { user, userProfile, hasPremium, canAccessFeature } = useAuth();
+  const { t } = useLanguage();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -65,13 +70,13 @@ const PatientDashboard = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: 'bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold',
-      confirmed: 'bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold',
-      completed: 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold',
-      cancelled: 'bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold',
-      rejected: 'bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold'
+      pending: 'badge-hb-warning',
+      confirmed: 'badge-hb-info',
+      completed: 'badge-hb-success',
+      cancelled: 'badge-hb-error',
+      rejected: 'badge-hb-error'
     };
-    return badges[status] || 'bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold';
+    return badges[status] || 'badge-hb-info';
   };
 
   const quickActions = [
@@ -84,7 +89,7 @@ const PatientDashboard = () => {
       premium: false
     },
     {
-      name: 'Book Appointment',
+      name: t('bookAppointment'),
       description: 'Schedule with available doctors',
       icon: CalendarDaysIcon,
       href: '/appointment/book',
@@ -92,7 +97,7 @@ const PatientDashboard = () => {
       premium: false
     },
     {
-      name: 'Video Call',
+      name: t('videoCall'),
       description: 'Start instant video consultation',
       icon: VideoCameraIcon,
       href: '/video-call',
@@ -100,15 +105,15 @@ const PatientDashboard = () => {
       premium: true
     },
     {
-      name: 'My Profile',
-      description: 'Manage your personal information',
+      name: 'Profile Settings',
+      description: 'Manage your profile and preferences',
       icon: UserIcon,
-      href: '/patient/profile',
+      href: '/profile/settings',
       color: 'bg-gradient-to-r from-indigo-500 to-indigo-600',
       premium: false
     },
     {
-      name: 'AI Assistant',
+      name: t('aiAssistant'),
       description: 'Get AI-powered health insights',
       icon: ChatBubbleLeftRightIcon,
       href: '/chatbot',
@@ -164,14 +169,19 @@ const PatientDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome, {userProfile?.name || user?.displayName || 'Patient'}! 👋
+                {t('welcomeUser')}, {userProfile?.name || user?.displayName || 'Patient'}! 👋
               </h1>
               <p className="text-gray-600">
-                Today: {new Date().toLocaleDateString('en-US', { 
+                {t('today')}: {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
@@ -181,104 +191,132 @@ const PatientDashboard = () => {
             </div>
             
             {!hasPremium && (
-              <div className="mt-4 sm:mt-0">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="mt-4 sm:mt-0"
+              >
                 <Link
                   to="/pricing"
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-shadow"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl shadow-hb-md hover:shadow-hb-lg transition-all duration-200"
                 >
                   <SparklesIcon className="w-5 h-5 mr-2" />
                   Upgrade to Premium
                 </Link>
-              </div>
+              </motion.div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat) => (
-            <div
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          {statCards.map((stat, index) => (
+            <motion.div
               key={stat.name}
-              className={`bg-white rounded-xl shadow-md p-6 border-2 ${stat.borderColor} hover:shadow-lg transition-shadow`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
+              className={`card-hb-interactive ${stat.bgColor} ${stat.borderColor} border-2`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className={`text-3xl font-bold ${stat.color} mt-2`}>{stat.value}</p>
+                  <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
                 <div className={`p-3 rounded-full ${stat.bgColor}`}>
                   <stat.icon className={`w-8 h-8 ${stat.color}`} />
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-md p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="lg:col-span-2"
+          >
+            <div className="card-hb">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
+                <h2 className="text-xl font-bold text-gray-900">{t('quickActions')}</h2>
                 <ArrowTrendingUpIcon className="w-6 h-6 text-gray-400" />
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {quickActions.map((action) => {
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {quickActions.map((action, index) => {
                   const isDisabled = action.premium && !canAccessFeature(action.href);
                   
                   return (
-                    <Link
+                    <motion.div
                       key={action.name}
-                      to={isDisabled ? '/pricing' : action.href}
-                      className={`
-                        block p-6 rounded-xl border-2 border-transparent transition-all relative
-                        ${isDisabled 
-                          ? 'bg-gray-100 cursor-not-allowed opacity-60' 
-                          : 'bg-white hover:border-gray-200 shadow-sm hover:shadow-md'
-                        }
-                      `}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                      whileHover={{ scale: isDisabled ? 1 : 1.05 }}
+                      whileTap={{ scale: isDisabled ? 1 : 0.95 }}
                     >
-                      <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
-                        <action.icon className="w-6 h-6 text-white" />
-                      </div>
-                      
-                      <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                        {action.name}
-                        {action.premium && (
-                          <SparklesIcon className="w-4 h-4 text-amber-500 ml-2" />
-                        )}
-                      </h3>
-                      
-                      <p className="text-sm text-gray-600 mb-4">{action.description}</p>
-                      
-                      <div className="flex items-center text-sm font-medium text-blue-600">
-                        {isDisabled ? 'Upgrade Required' : 'Get Started'}
-                        <PlusIcon className="w-4 h-4 ml-1" />
-                      </div>
-                      
-                      {action.premium && !hasPremium && (
-                        <div className="absolute top-3 right-3">
-                          <div className="bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 text-xs font-medium px-2 py-1 rounded-full">
-                            Premium
-                          </div>
+                      <Link
+                        to={isDisabled ? '/pricing' : action.href}
+                        className={`
+                          block p-6 rounded-xl border-2 border-transparent transition-all duration-200 relative
+                          ${isDisabled 
+                            ? 'bg-gray-100 cursor-not-allowed opacity-60' 
+                            : 'bg-white hover:border-gray-200 shadow-hb hover:shadow-hb-md'
+                          }
+                        `}
+                      >
+                        <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
+                          <action.icon className="w-6 h-6 text-white" />
                         </div>
-                      )}
-                    </Link>
+                        
+                        <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                          {action.name}
+                          {action.premium && (
+                            <SparklesIcon className="w-4 h-4 text-amber-500 ml-2" />
+                          )}
+                        </h3>
+                        
+                        <p className="text-sm text-gray-600 mb-4">{action.description}</p>
+                        
+                        <div className="flex items-center text-sm font-medium text-hb-primary">
+                          {isDisabled ? 'Upgrade Required' : 'Get Started'}
+                          <PlusIcon className="w-4 h-4 ml-1" />
+                        </div>
+                        
+                        {action.premium && !hasPremium && (
+                          <div className="absolute top-3 right-3">
+                            <div className="bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 text-xs font-medium px-2 py-1 rounded-full">
+                              Premium
+                            </div>
+                          </div>
+                        )}
+                      </Link>
+                    </motion.div>
                   );
                 })}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Recent Appointments */}
-          <div>
-            <div className="bg-white rounded-xl shadow-md p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <div className="card-hb">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Recent Appointments</h2>
+                <h2 className="text-xl font-bold text-gray-900">{t('recentAppointments')}</h2>
                 <Link
                   to="/patient/appointments"
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center"
+                  className="text-hb-primary hover:text-blue-700 font-medium text-sm flex items-center"
                 >
                   View All
                   <EyeIcon className="w-4 h-4 ml-1" />
@@ -287,16 +325,19 @@ const PatientDashboard = () => {
 
               <div className="space-y-4">
                 {appointments.slice(0, 3).map((appointment) => (
-                  <div
+                  <motion.div
                     key={appointment.id}
-                    className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-white hover:shadow-md transition-all"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-white hover:shadow-hb transition-all duration-200"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h4 className="font-semibold text-gray-900">Dr. {appointment.doctorName}</h4>
                         <p className="text-sm text-gray-600">{appointment.specialization}</p>
                       </div>
-                      <span className={getStatusBadge(appointment.status)}>
+                      <span className={`${getStatusBadge(appointment.status)}`}>
                         {appointment.status}
                       </span>
                     </div>
@@ -318,7 +359,7 @@ const PatientDashboard = () => {
                         Video Consultation
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
 
                 {appointments.length === 0 && (
@@ -327,7 +368,7 @@ const PatientDashboard = () => {
                     <p className="text-gray-600 mb-2">No appointments yet</p>
                     <Link
                       to="/appointment/book"
-                      className="text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-hb-primary hover:text-blue-700 font-medium"
                     >
                       Book your first appointment
                     </Link>
@@ -335,14 +376,19 @@ const PatientDashboard = () => {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Health Tips Section */}
-        <div className="mt-8">
-          <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl shadow-md p-6 border-2 border-teal-100">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="mt-8"
+        >
+          <div className="card-hb bg-gradient-to-r from-teal-50 to-blue-50 border-2 border-teal-100">
             <div className="flex items-start space-x-4">
-              <div className="p-3 bg-white rounded-full shadow-md">
+              <div className="p-3 bg-white rounded-full shadow-hb">
                 <HeartIcon className="w-8 h-8 text-teal-600" />
               </div>
               <div className="flex-1">
@@ -358,7 +404,7 @@ const PatientDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

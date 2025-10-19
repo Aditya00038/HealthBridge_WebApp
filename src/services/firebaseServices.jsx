@@ -222,5 +222,50 @@ export const doctorServices = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Check if patient has pending/unpaid appointments
+  async checkPendingAppointments(patientId) {
+    try {
+      const q = query(
+        collection(db, 'appointments'),
+        where('patientId', '==', patientId),
+        where('status', 'in', ['pending', 'confirmed'])
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const appointments = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Check for unpaid appointments
+      const unpaidAppointments = appointments.filter(apt => 
+        apt.paymentStatus !== 'paid' && apt.status === 'confirmed'
+      );
+      
+      return {
+        hasPending: appointments.length > 0,
+        hasUnpaid: unpaidAppointments.length > 0,
+        pendingCount: appointments.filter(apt => apt.status === 'pending').length,
+        unpaidCount: unpaidAppointments.length,
+        appointments: appointments
+      };
+    } catch (error) {
+      console.error('Error checking pending appointments:', error);
+      return { hasPending: false, hasUnpaid: false, pendingCount: 0, unpaidCount: 0, appointments: [] };
+    }
+  },
+
+  // Update appointment payment status
+  async updateAppointmentPayment(appointmentId, paymentData) {
+    try {
+      const appointmentRef = doc(db, 'appointments', appointmentId);
+      await updateDoc(appointmentRef, {
+        ...paymentData,
+        updatedAt: Timestamp.now()
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      throw error;
+    }
   }
 };

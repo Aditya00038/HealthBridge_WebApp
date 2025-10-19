@@ -7,25 +7,29 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import PWABadge from './PWABadge.jsx';
 
 // Pages
-import LandingPage from '@/pages/LandingPage';
+import LandingPage from '@/pages/LandingPageClean';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignupPage from '@/pages/auth/SignupPage';
 import PatientDashboard from '@/pages/patient/PatientDashboard';
-import PatientAppointments from '@/pages/patient/PatientAppointments';
+import PatientAppointments from '@/pages/patient/PatientAppointmentsEnhanced';
+import PatientProfile from '@/pages/patient/PatientProfile';
 import DoctorDashboard from '@/pages/doctor/DoctorDashboard';
 import DoctorAppointments from '@/pages/doctor/DoctorAppointments';
+import DoctorPatients from '@/pages/doctor/DoctorPatients';
 import DoctorProfileSetup from '@/pages/DoctorProfileSetup';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AppointmentBooking from '@/pages/AppointmentBooking';
 import VideoCall from '@/pages/VideoCall';
 import Chatbot from '@/pages/Chatbot';
-import PricingPage from '@/pages/PricingPage';
+import ChatbotFullScreen from '@/pages/ChatbotFullScreen';
+import ChatbotNew from '@/pages/ChatbotNew';
+import PricingPage from '@/pages/PricingPageClean';
 import ProfileSettings from '@/pages/ProfileSettings';
 import UserProfile from '@/pages/UserProfile';
 
 // Components
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import Navbar from '@/components/layout/NavbarClean';
+import Footer from '@/components/layout/FooterClean';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // Protected Route Component
@@ -85,18 +89,48 @@ const DashboardRedirect = () => {
   }
 };
 
+// Layout wrapper component
+const LayoutWrapper = ({ children, fullScreen = false }) => {
+  if (fullScreen) {
+    return <>{children}</>;
+  }
+  
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="flex-grow pt-16">
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
 function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
         <PaymentProvider>
-                <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-          <div className="flex flex-col min-h-screen bg-gray-50">
-            <Navbar />
-            <main className="flex-grow pt-16"> {/* Add top padding to account for fixed navbar */}
-              <Routes>
-                {/* Dashboard Route - redirects to appropriate dashboard based on user role */}
-                <Route path="/" element={<DashboardRedirect />} />
+          <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+            <Routes>
+              {/* Full-screen routes (no navbar/footer) */}
+              <Route 
+                path="/chatbot-fullscreen" 
+                element={
+                  <ProtectedRoute>
+                    <ChatbotFullScreen />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Regular routes with layout */}
+              <Route
+                path="/*"
+                element={
+                  <LayoutWrapper>
+                    <Routes>
+                      {/* Dashboard Route - redirects to appropriate dashboard based on user role */}
+                      <Route path="/" element={<DashboardRedirect />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route 
                   path="/login" 
@@ -157,10 +191,26 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/patient/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <PatientProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/doctor/appointments" 
                   element={
                     <ProtectedRoute>
                       <DoctorAppointments />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/doctor/patients" 
+                  element={
+                    <ProtectedRoute>
+                      <DoctorPatients />
                     </ProtectedRoute>
                   } 
                 />
@@ -184,7 +234,7 @@ function App() {
                   path="/chatbot" 
                   element={
                     <ProtectedRoute>
-                      <Chatbot />
+                      <ChatbotNew />
                     </ProtectedRoute>
                   } 
                 />
@@ -207,10 +257,11 @@ function App() {
 
                 {/* Catch all route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
+                    </Routes>
+                  </LayoutWrapper>
+                }
+              />
+            </Routes>
           
           {/* Toast notifications */}
           <Toaster 

@@ -100,10 +100,10 @@ const PatientDashboard = () => {
       premium: true
     },
     {
-      name: 'My Profile',
-      description: 'Manage your personal information',
+      name: 'Profile Settings',
+      description: 'Manage your profile and preferences',
       icon: UserIcon,
-      href: '/patient/profile',
+      href: '/profile/settings',
       color: 'bg-gradient-to-r from-indigo-500 to-indigo-600',
       premium: false
     },

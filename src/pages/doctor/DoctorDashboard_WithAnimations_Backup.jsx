@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { appointmentServices } from '../../services/firebaseServices';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import AppointmentRequests from '../../components/AppointmentRequests';
@@ -13,18 +15,22 @@ import {
   VideoCameraIcon,
   BellIcon,
   DocumentTextIcon,
+  ChatBubbleLeftRightIcon,
   ExclamationTriangleIcon,
   StarIcon,
   UserIcon,
   EyeIcon,
   ArrowTrendingUpIcon,
-  HeartIcon
+  HeartIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
 
 const DoctorDashboard = () => {
   const { user, userProfile } = useAuth();
+  const { t } = useLanguage();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState({
     totalAppointments: 0,
     todayAppointments: 0,
@@ -68,13 +74,13 @@ const DoctorDashboard = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: 'bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold',
-      confirmed: 'bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold',
-      completed: 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold',
-      cancelled: 'bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold',
-      rejected: 'bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold'
+      pending: 'badge-hb-warning',
+      confirmed: 'badge-hb-info',
+      completed: 'badge-hb-success',
+      cancelled: 'badge-hb-error',
+      rejected: 'badge-hb-error'
     };
-    return badges[status] || 'bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold';
+    return badges[status] || 'badge-hb-info';
   };
 
   const quickActions = [
@@ -162,14 +168,19 @@ const DoctorDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Welcome, Dr. {userProfile?.name || user?.displayName || 'Doctor'}! 👩‍⚕️
               </h1>
               <p className="text-gray-600">
-                Today: {new Date().toLocaleDateString('en-US', { 
+                {t('today')}: {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
@@ -178,79 +189,107 @@ const DoctorDashboard = () => {
               </p>
             </div>
             
-            <div className="mt-4 sm:mt-0">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="mt-4 sm:mt-0"
+            >
               <Link
                 to="/doctor/profile-setup"
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-teal-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-shadow"
+                className="inline-flex items-center px-6 py-3 bg-gradient-hb-primary text-white font-semibold rounded-xl shadow-hb-md hover:shadow-hb-lg transition-all duration-200"
               >
                 <PlusIcon className="w-5 h-5 mr-2" />
                 Update Profile
               </Link>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat) => (
-            <div
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          {statCards.map((stat, index) => (
+            <motion.div
               key={stat.name}
-              className={`bg-white rounded-xl shadow-md p-6 border-2 ${stat.borderColor} hover:shadow-lg transition-shadow`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 + index * 0.1 }}
+              className={`card-hb-interactive ${stat.bgColor} ${stat.borderColor} border-2`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className={`text-3xl font-bold ${stat.color} mt-2`}>{stat.value}</p>
+                  <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
                 <div className={`p-3 rounded-full ${stat.bgColor}`}>
                   <stat.icon className={`w-8 h-8 ${stat.color}`} />
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-md p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="lg:col-span-2"
+          >
+            <div className="card-hb">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
                 <ArrowTrendingUpIcon className="w-6 h-6 text-gray-400" />
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {quickActions.map((action) => (
-                  <Link
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {quickActions.map((action, index) => (
+                  <motion.div
                     key={action.name}
-                    to={action.href}
-                    className="block p-6 rounded-xl border-2 border-transparent bg-white hover:border-gray-200 shadow-sm hover:shadow-md transition-all"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
-                      <action.icon className="w-6 h-6 text-white" />
-                    </div>
-                    
-                    <h3 className="font-semibold text-gray-900 mb-2">{action.name}</h3>
-                    <p className="text-sm text-gray-600 mb-4">{action.description}</p>
-                    
-                    <div className="flex items-center text-sm font-medium text-blue-600">
-                      Access Now
-                      <EyeIcon className="w-4 h-4 ml-1" />
-                    </div>
-                  </Link>
+                    <Link
+                      to={action.href}
+                      className="block p-6 rounded-xl border-2 border-transparent bg-white hover:border-gray-200 shadow-hb hover:shadow-hb-md transition-all duration-200"
+                    >
+                      <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
+                        <action.icon className="w-6 h-6 text-white" />
+                      </div>
+                      
+                      <h3 className="font-semibold text-gray-900 mb-2">{action.name}</h3>
+                      <p className="text-sm text-gray-600 mb-4">{action.description}</p>
+                      
+                      <div className="flex items-center text-sm font-medium text-hb-primary">
+                        Access Now
+                        <EyeIcon className="w-4 h-4 ml-1" />
+                      </div>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Today's Appointments */}
-          <div>
-            <div className="bg-white rounded-xl shadow-md p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <div className="card-hb">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Today's Schedule</h2>
                 <Link
                   to="/doctor/appointments"
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center"
+                  className="text-hb-primary hover:text-blue-700 font-medium text-sm flex items-center"
                 >
                   View All
                   <EyeIcon className="w-4 h-4 ml-1" />
@@ -266,16 +305,19 @@ const DoctorDashboard = () => {
                   })
                   .slice(0, 3)
                   .map((appointment) => (
-                    <div
+                    <motion.div
                       key={appointment.id}
-                      className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-white hover:shadow-md transition-all"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-white hover:shadow-hb transition-all duration-200"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h4 className="font-semibold text-gray-900">{appointment.patientName}</h4>
                           <p className="text-sm text-gray-600">{appointment.patientEmail}</p>
                         </div>
-                        <span className={getStatusBadge(appointment.status)}>
+                        <span className={`${getStatusBadge(appointment.status)}`}>
                           {appointment.status}
                         </span>
                       </div>
@@ -298,7 +340,7 @@ const DoctorDashboard = () => {
                           <strong>Reason:</strong> {appointment.reasonForVisit}
                         </div>
                       )}
-                    </div>
+                    </motion.div>
                   ))}
 
                 {appointments.filter(apt => {
@@ -314,19 +356,24 @@ const DoctorDashboard = () => {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Appointment Requests Section */}
-        <div className="mt-8">
-          <div className="bg-white rounded-xl shadow-md p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mt-8"
+        >
+          <div className="card-hb">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900 flex items-center">
                 <BellIcon className="w-6 h-6 mr-2 text-orange-500" />
-                Appointment Requests
+                {t('appointmentRequests')}
               </h2>
               {stats.pendingAppointments > 0 && (
-                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
+                <span className="badge-hb-warning">
                   {stats.pendingAppointments} pending
                 </span>
               )}
@@ -336,13 +383,18 @@ const DoctorDashboard = () => {
               doctorId={user?.uid}
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Professional Tips Section */}
-        <div className="mt-8">
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-md p-6 border-2 border-indigo-100">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="mt-8"
+        >
+          <div className="card-hb bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-100">
             <div className="flex items-start space-x-4">
-              <div className="p-3 bg-white rounded-full shadow-md">
+              <div className="p-3 bg-white rounded-full shadow-hb">
                 <HeartIcon className="w-8 h-8 text-indigo-600" />
               </div>
               <div className="flex-1">
@@ -358,7 +410,7 @@ const DoctorDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
