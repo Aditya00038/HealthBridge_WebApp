@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   MapPinIcon,
@@ -10,17 +10,75 @@ import {
   MapIcon,
   BuildingOfficeIcon,
   UserGroupIcon,
-  HeartIcon
+  HeartIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { 
+  getFacilitiesByCity, 
+  getAvailableCities, 
+  getUserLocation, 
+  calculateDistance 
+} from '@/services/locationServices';
 
 const LocatePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedCity, setSelectedCity] = useState('new-york');
+  const [userLocation, setUserLocation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [facilities, setFacilities] = useState([]);
 
-  // Mock data for nearby healthcare facilities
-  const facilities = [
+  // Load facilities when city changes
+  useEffect(() => {
+    loadFacilities();
+  }, [selectedCity]);
+
+  // Get user location on mount
+  useEffect(() => {
+    getUserLocation()
+      .then(location => {
+        setUserLocation(location);
+        calculateDistances(location);
+      })
+      .catch(error => {
+        console.log('Location access denied:', error);
+      });
+  }, []);
+
+  const loadFacilities = () => {
+    setLoading(true);
+    const cityData = getFacilitiesByCity(selectedCity);
+    setFacilities(cityData);
+    
+    if (userLocation) {
+      calculateDistances(userLocation);
+    }
+    
+    setLoading(false);
+  };
+
+  const calculateDistances = (location) => {
+    setFacilities(prev => prev.map(facility => ({
+      ...facility,
+      distance: `${calculateDistance(
+        location.lat,
+        location.lng,
+        facility.coordinates.lat,
+        facility.coordinates.lng
+      ).toFixed(1)} km`
+    })));
+  };
+
+  const availableCities = [
+    { id: 'new-york', name: 'New York City' },
+    { id: 'los-angeles', name: 'Los Angeles' },
+    { id: 'london', name: 'London' },
+    { id: 'mumbai', name: 'Mumbai' }
+  ];
+
+  const oldMockData = [
     {
       id: 1,
       name: 'City Medical Center',
@@ -149,7 +207,7 @@ const LocatePage = () => {
       coordinates: { lat: 40.7168, lng: -74.0100 },
       services: ['X-Ray', 'MRI', 'CT Scan', 'Ultrasound']
     }
-  ];
+  ]; // End of old mock data - now removed
 
   const types = [
     { id: 'all', name: 'All', icon: MapPinIcon, color: 'gray' },
@@ -241,6 +299,25 @@ const LocatePage = () => {
           transition={{ delay: 0.1 }}
           className="bg-white rounded-2xl shadow-lg p-6 mb-8"
         >
+          {/* City Selector */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <GlobeAltIcon className="w-5 h-5 inline-block mr-2" />
+              Select City
+            </label>
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+            >
+              {availableCities.map(city => (
+                <option key={city.id} value={city.id}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Search Input */}
           <div className="relative mb-6">
             <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
