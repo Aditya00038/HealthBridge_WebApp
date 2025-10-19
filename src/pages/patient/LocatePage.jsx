@@ -25,7 +25,7 @@ const LocatePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const [selectedCity, setSelectedCity] = useState('new-york');
+  const [selectedCity, setSelectedCity] = useState('mumbai');
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [facilities, setFacilities] = useState([]);
@@ -72,10 +72,15 @@ const LocatePage = () => {
   };
 
   const availableCities = [
-    { id: 'new-york', name: 'New York City' },
-    { id: 'los-angeles', name: 'Los Angeles' },
-    { id: 'london', name: 'London' },
-    { id: 'mumbai', name: 'Mumbai' }
+    { id: 'mumbai', name: 'Mumbai, Maharashtra' },
+    { id: 'delhi', name: 'Delhi NCR' },
+    { id: 'bangalore', name: 'Bangalore, Karnataka' },
+    { id: 'chennai', name: 'Chennai, Tamil Nadu' },
+    { id: 'hyderabad', name: 'Hyderabad, Telangana' },
+    { id: 'pune', name: 'Pune, Maharashtra' },
+    { id: 'kolkata', name: 'Kolkata, West Bengal' },
+    { id: 'ahmedabad', name: 'Ahmedabad, Gujarat' },
+    { id: 'jaipur', name: 'Jaipur, Rajasthan' }
   ];
 
   const oldMockData = [
