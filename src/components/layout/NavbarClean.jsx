@@ -33,8 +33,9 @@ const NavbarClean = () => {
 
   const patientNavigation = [
     { name: 'Dashboard', href: '/patient/dashboard' },
-    { name: 'Appointments', href: '/appointment/book' },
-    { name: 'AI Assistant', href: '/chatbot' }
+    { name: 'Book Appointment', href: '/appointment/book' },
+    { name: 'AI Assistant', href: '/chatbot' },
+    { name: 'Locate', href: '/locate' }
   ];
 
   const doctorNavigation = [

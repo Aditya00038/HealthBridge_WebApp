@@ -13,6 +13,7 @@ import SignupPage from '@/pages/auth/SignupPage';
 import PatientDashboard from '@/pages/patient/PatientDashboard';
 import PatientAppointments from '@/pages/patient/PatientAppointmentsEnhanced';
 import PatientProfile from '@/pages/patient/PatientProfile';
+import LocatePage from '@/pages/patient/LocatePage';
 import DoctorDashboard from '@/pages/doctor/DoctorDashboard';
 import DoctorAppointments from '@/pages/doctor/DoctorAppointments';
 import DoctorPatients from '@/pages/doctor/DoctorPatients';
@@ -195,6 +196,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <PatientProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/locate" 
+                  element={
+                    <ProtectedRoute>
+                      <LocatePage />
                     </ProtectedRoute>
                   } 
                 />
