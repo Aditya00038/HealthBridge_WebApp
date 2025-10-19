@@ -9,7 +9,8 @@ import {
   PhoneIcon,
   IdentificationIcon,
   AcademicCapIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  BeakerIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -284,7 +285,7 @@ const SignupPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     I want to register as
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, role: 'patient' }))}
@@ -317,6 +318,24 @@ const SignupPage = () => {
                         <div>
                           <div className="font-semibold text-gray-900">Doctor</div>
                           <div className="text-xs text-gray-600">Provide care</div>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, role: 'medicine-seller' }))}
+                      className={`p-4 text-left border-2 rounded-lg transition-colors ${
+                        formData.role === 'medicine-seller'
+                          ? 'border-teal-500 bg-teal-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <BeakerIcon className="w-6 h-6 text-gray-600" />
+                        <div>
+                          <div className="font-semibold text-gray-900">Pharmacy</div>
+                          <div className="text-xs text-gray-600">Sell medicines</div>
                         </div>
                       </div>
                     </button>

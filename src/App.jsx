@@ -13,11 +13,15 @@ import SignupPage from '@/pages/auth/SignupPage';
 import PatientDashboard from '@/pages/patient/PatientDashboard';
 import PatientAppointments from '@/pages/patient/PatientAppointmentsEnhanced';
 import PatientProfile from '@/pages/patient/PatientProfile';
+import PatientHistory from '@/pages/patient/PatientHistory';
 import LocatePage from '@/pages/patient/LocatePage';
 import DoctorDashboard from '@/pages/doctor/DoctorDashboard';
 import DoctorAppointments from '@/pages/doctor/DoctorAppointments';
 import DoctorPatients from '@/pages/doctor/DoctorPatients';
+import DoctorSchedule from '@/pages/doctor/DoctorSchedule';
+import DoctorPatientRecords from '@/pages/doctor/DoctorPatientRecords';
 import DoctorProfileSetup from '@/pages/DoctorProfileSetup';
+import MedicineSellerDashboard from '@/pages/medicine-seller/MedicineSellerDashboard';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AppointmentBooking from '@/pages/AppointmentBooking';
 import VideoCall from '@/pages/VideoCall';
@@ -58,6 +62,8 @@ const PublicRoute = ({ children }) => {
         return <Navigate to="/patient/dashboard" replace />;
       case 'doctor':
         return <Navigate to="/doctor/dashboard" replace />;
+      case 'medicine-seller':
+        return <Navigate to="/medicine-seller/dashboard" replace />;
       case 'admin':
         return <Navigate to="/admin/dashboard" replace />;
       default:
@@ -83,6 +89,8 @@ const DashboardRedirect = () => {
       return <Navigate to="/patient/dashboard" replace />;
     case 'doctor':
       return <Navigate to="/doctor/dashboard" replace />;
+    case 'medicine-seller':
+      return <Navigate to="/medicine-seller/dashboard" replace />;
     case 'admin':
       return <Navigate to="/admin/dashboard" replace />;
     default:
@@ -220,6 +228,38 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <DoctorPatients />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/doctor/schedule" 
+                  element={
+                    <ProtectedRoute>
+                      <DoctorSchedule />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/doctor/patient-records" 
+                  element={
+                    <ProtectedRoute>
+                      <DoctorPatientRecords />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/patient/history" 
+                  element={
+                    <ProtectedRoute>
+                      <PatientHistory />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/medicine-seller/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <MedicineSellerDashboard />
                     </ProtectedRoute>
                   } 
                 />

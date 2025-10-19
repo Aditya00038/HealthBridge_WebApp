@@ -56,15 +56,15 @@ const Navbar = () => {
   const patientNavigation = [
     { name: t('dashboard'), href: '/patient/dashboard', icon: UserIcon },
     { name: t('bookAppointment'), href: '/appointment/book', icon: CalendarDaysIcon },
-    { name: t('videoCall'), href: '/video-call', icon: VideoCameraIcon, premium: true },
-    { name: t('aiAssistant'), href: '/chatbot', icon: ChatBubbleLeftRightIcon }
+    { name: t('aiAssistant'), href: '/chatbot', icon: ChatBubbleLeftRightIcon },
+    { name: 'History', href: '/patient/history', icon: CalendarDaysIcon }
   ];
 
   const doctorNavigation = [
-    { name: t('dashboard'), href: '/doctor/dashboard', icon: UserIcon },
-    { name: t('myPatients'), href: '/doctor/patients', icon: UserIcon },
-    { name: t('myAppointments'), href: '/doctor/appointments', icon: CalendarDaysIcon },
-    { name: t('videoCall'), href: '/video-call', icon: VideoCameraIcon }
+    { name: 'Dashboard', href: '/doctor/dashboard', icon: UserIcon },
+    { name: 'My Schedule', href: '/doctor/schedule', icon: CalendarDaysIcon },
+    { name: 'Appointments', href: '/doctor/appointments', icon: CalendarDaysIcon },
+    { name: 'Patient Records', href: '/doctor/patient-records', icon: UserIcon }
   ];
 
   const currentNavigation = user 
