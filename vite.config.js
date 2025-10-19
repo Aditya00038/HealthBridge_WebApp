@@ -27,8 +27,8 @@ export default defineConfig({
     },
 
     manifest: {
-      name: 'CareConnect - Healthcare Platform',
-      short_name: 'CareConnect',
+      name: 'HealthBridge - Healthcare Platform',
+      short_name: 'HealthBridge',
       description: 'Your trusted healthcare companion - reducing travel time and costs with online and offline medical solutions',
       theme_color: '#10b981',
       background_color: '#ffffff',

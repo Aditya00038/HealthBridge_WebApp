@@ -173,7 +173,7 @@ const SignupPage = () => {
       const result = await signup(formData);
       
       if (result.success) {
-        toast.success('Welcome to CareConnect! Registration successful.');
+        toast.success('Welcome to HealthBridge! Registration successful.');
       } else {
         toast.error(result.error || 'Registration failed. Please try again.');
       }
@@ -232,7 +232,7 @@ const SignupPage = () => {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Join CareConnect
+            Join HealthBridge
           </h1>
           <p className="text-gray-600">
             Create your account to get started

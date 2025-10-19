@@ -297,7 +297,7 @@ export const AuthProvider = ({ children }) => {
       };
       await setDoc(doc(db, 'subscriptions', firebaseUser.uid), defaultSubscription);
       
-      toast.success(`Welcome to CareConnect, ${userData.name}!`);
+      toast.success(`Welcome to HealthBridge, ${userData.name}!`);
       return { success: true };
       
     } catch (error) {

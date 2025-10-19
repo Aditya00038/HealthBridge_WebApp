@@ -66,7 +66,7 @@ const LoginPage = () => {
       const result = await login(formData.email, formData.password);
       
       if (result.success) {
-        toast.success('Welcome back to CareConnect!');
+        toast.success('Welcome back to HealthBridge!');
       } else {
         toast.error(result.error || 'Login failed. Please try again.');
       }
@@ -130,7 +130,7 @@ const LoginPage = () => {
             Welcome Back
           </h1>
           <p className="text-gray-600">
-            Sign in to continue to CareConnect
+            Sign in to continue to HealthBridge
           </p>
         </div>
 

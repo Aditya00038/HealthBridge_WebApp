@@ -1,9 +1,9 @@
 {
-  "name": "careconnect",
+  "name": "healthbridge",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Healthcare SaaS Platform - Reducing travel time and costs with online/offline medical solutions",
+  "description": "HealthBridge - Healthcare SaaS Platform - Reducing travel time and costs with online/offline medical solutions",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

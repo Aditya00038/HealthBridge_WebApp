@@ -33,7 +33,7 @@ const ChatbotNew = () => {
     if (messages.length === 0) {
       setMessages([{
         type: 'ai',
-        content: `# 👋 Welcome to CareConnect Health Assistant!
+        content: `# 👋 Welcome to HealthBridge Health Assistant!
 
 I'm your **medical and health advisor**. I can help you with health-related questions only.
 

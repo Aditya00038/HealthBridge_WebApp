@@ -84,7 +84,7 @@ const LandingPage = () => {
     {
       name: 'Sarah Johnson',
       role: 'Working Mother',
-      content: 'CareConnect is a game-changer! I can consult with my doctor during lunch breaks without leaving work. The AI assistant even helps me track my family\'s health!',
+      content: 'HealthBridge is a game-changer! I can consult with my doctor during lunch breaks without leaving work. The AI assistant even helps me track my family\'s health!',
       avatar: 'SJ',
       rating: 5,
       location: 'San Francisco, CA',
@@ -316,7 +316,7 @@ const LandingPage = () => {
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               From finding the right doctor to managing your medications, 
-              CareConnect provides a comprehensive healthcare ecosystem powered by AI.
+              HealthBridge provides a comprehensive healthcare ecosystem powered by AI.
             </p>
           </div>
 
@@ -363,7 +363,7 @@ const LandingPage = () => {
               <span className="bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">Healthcare Providers</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              See what real users are saying about their transformative CareConnect experience.
+              See what real users are saying about their transformative HealthBridge experience.
             </p>
           </div>
 
@@ -470,7 +470,7 @@ const LandingPage = () => {
             </h2>
             <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto">
               Join thousands of patients and healthcare providers who are already experiencing 
-              the future of healthcare with CareConnect.
+              the future of healthcare with HealthBridge.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
