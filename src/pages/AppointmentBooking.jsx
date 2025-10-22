@@ -221,47 +221,40 @@ const AppointmentBooking = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Healthcare Professional Hero Section - Green Theme */}
-      <div className="bg-gradient-to-br from-green-600 via-green-700 to-emerald-800 text-white relative overflow-hidden">
+      {/* Healthcare Professional Hero Section - Improved Colors */}
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white relative overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 left-10 w-96 h-96 bg-emerald-400 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 left-10 w-96 h-96 bg-teal-400 rounded-full blur-3xl"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            {/* Medical Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full mb-6 border border-white/30">
-              <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
-              <span className="text-sm font-semibold text-white">Professional Healthcare Services</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-white leading-tight">
-              Book Your Medical
-              <span className="block text-green-200 mt-2">Appointment Today</span>
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 text-white leading-tight">
+              Book Your Appointment
             </h1>
-            <p className="text-xl md:text-2xl text-green-100 max-w-3xl mx-auto mb-8 leading-relaxed font-light">
-              Connect with qualified healthcare professionals for video, phone, or in-clinic consultations
+            <p className="text-xl md:text-2xl text-teal-100 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+              Connect with qualified healthcare professionals instantly
             </p>
             
-            {/* Stats - Healthcare Focus */}
-            <div className="flex justify-center gap-8 flex-wrap mt-12">
-              <div className="text-center bg-white/10 backdrop-blur-sm px-8 py-4 rounded-2xl border border-white/20">
-                <div className="text-4xl font-bold text-white">{doctors.length}+</div>
-                <div className="text-green-200 text-sm font-medium">Verified Doctors</div>
+            {/* Compact Stats */}
+            <div className="flex justify-center gap-4 flex-wrap">
+              <div className="bg-white/95 px-6 py-3 rounded-xl shadow-lg">
+                <div className="text-2xl font-bold text-gray-900">{doctors.length}+</div>
+                <div className="text-xs text-gray-600 font-medium">Doctors</div>
               </div>
-              <div className="text-center bg-white/10 backdrop-blur-sm px-8 py-4 rounded-2xl border border-white/20">
-                <div className="text-4xl font-bold text-white">4.8★</div>
-                <div className="text-green-200 text-sm font-medium">Patient Rating</div>
+              <div className="bg-white/95 px-6 py-3 rounded-xl shadow-lg">
+                <div className="text-2xl font-bold text-gray-900">4.8★</div>
+                <div className="text-xs text-gray-600 font-medium">Rating</div>
               </div>
-              <div className="text-center bg-white/10 backdrop-blur-sm px-8 py-4 rounded-2xl border border-white/20">
-                <div className="text-4xl font-bold text-white">24/7</div>
-                <div className="text-green-200 text-sm font-medium">Available Care</div>
+              <div className="bg-white/95 px-6 py-3 rounded-xl shadow-lg">
+                <div className="text-2xl font-bold text-gray-900">24/7</div>
+                <div className="text-xs text-gray-600 font-medium">Support</div>
               </div>
             </div>
           </motion.div>
@@ -280,22 +273,22 @@ const AppointmentBooking = () => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Healthcare Search Section - Green Theme */}
+              {/* Healthcare Search Section - Improved Colors */}
               <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-100 p-8 mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">Find Your Healthcare Provider</h2>
                 
-                {/* Search Bar - Green Focus */}
+                {/* Search Bar - Teal Focus */}
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
                   <div className="flex-1 relative">
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                      <MagnifyingGlassIcon className="h-6 w-6 text-green-600" />
+                      <MagnifyingGlassIcon className="h-6 w-6 text-teal-600" />
                     </div>
                     <input
                       type="text"
                       placeholder="Search by doctor name, specialization, or medical condition..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900 font-medium"
+                      className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all placeholder-gray-400 text-gray-900 font-medium"
                     />
                   </div>
                   
@@ -305,8 +298,8 @@ const AppointmentBooking = () => {
                       className={`
                         flex items-center gap-2 px-6 py-4 rounded-xl font-bold transition-all duration-300
                         ${showFilters 
-                          ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg scale-105' 
-                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-green-500 hover:bg-green-50'
+                          ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg scale-105' 
+                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-teal-500 hover:bg-teal-50'
                         }
                       `}
                     >
@@ -316,12 +309,12 @@ const AppointmentBooking = () => {
                     
                     <div className="relative min-w-[220px]">
                       <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                        <AdjustmentsHorizontalIcon className="h-5 w-5 text-green-600" />
+                        <AdjustmentsHorizontalIcon className="h-5 w-5 text-teal-600" />
                       </div>
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 pl-12 pr-10 py-4 rounded-xl font-semibold hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all cursor-pointer"
+                        className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 pl-12 pr-10 py-4 rounded-xl font-semibold hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer"
                       >
                         {sortOptions.map(option => (
                           <option key={option.value} value={option.value} className="py-2">
@@ -330,7 +323,7 @@ const AppointmentBooking = () => {
                         ))}
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                        <svg className="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </div>
@@ -338,7 +331,7 @@ const AppointmentBooking = () => {
                   </div>
                 </div>
 
-                {/* Filter Options - Healthcare Green Theme */}
+                {/* Filter Options - Improved Colors */}
                 <AnimatePresence>
                   {showFilters && (
                     <motion.div
@@ -352,15 +345,15 @@ const AppointmentBooking = () => {
                         {/* Specialization Filter */}
                         <div>
                           <label className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-2">
-                              <AcademicCapIcon className="h-5 w-5 text-green-600" />
+                            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-2">
+                              <AcademicCapIcon className="h-5 w-5 text-teal-600" />
                             </div>
                             Specialization
                           </label>
                           <select
                             value={selectedSpecialization}
                             onChange={(e) => setSelectedSpecialization(e.target.value)}
-                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all cursor-pointer font-semibold"
+                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-semibold"
                           >
                             {specializations.map(spec => (
                               <option key={spec} value={spec} className="py-2">
@@ -373,15 +366,15 @@ const AppointmentBooking = () => {
                         {/* Experience Filter */}
                         <div>
                           <label className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-2">
-                              <ClockIcon className="h-5 w-5 text-green-600" />
+                            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-2">
+                              <ClockIcon className="h-5 w-5 text-teal-600" />
                             </div>
                             Experience
                           </label>
                           <select
                             value={experienceFilter}
                             onChange={(e) => setExperienceFilter(e.target.value)}
-                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all cursor-pointer font-semibold"
+                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-semibold"
                           >
                             {experienceOptions.map(option => (
                               <option key={option.value} value={option.value} className="py-2">
@@ -402,7 +395,7 @@ const AppointmentBooking = () => {
                           <select
                             value={ratingFilter}
                             onChange={(e) => setRatingFilter(e.target.value)}
-                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all cursor-pointer font-semibold"
+                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-semibold"
                           >
                             {ratingOptions.map(option => (
                               <option key={option.value} value={option.value} className="py-2">
@@ -425,7 +418,7 @@ const AppointmentBooking = () => {
                             placeholder="Enter city or area..."
                             value={locationFilter === 'all' ? '' : locationFilter}
                             onChange={(e) => setLocationFilter(e.target.value || 'all')}
-                            className="w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 rounded-xl hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all font-semibold placeholder-gray-400"
+                            className="w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all font-semibold placeholder-gray-400"
                           />
                         </div>
                       </div>
@@ -500,15 +493,15 @@ const AppointmentBooking = () => {
                     className={`
                       rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden group
                       ${selectedDoctor?.id === doctor.id 
-                        ? 'border-2 border-green-600 bg-gradient-to-br from-green-50 via-white to-emerald-50 shadow-2xl shadow-green-200/50' 
-                        : 'border-2 border-gray-100 bg-white hover:border-green-400 shadow-xl hover:shadow-2xl'
+                        ? 'border-2 border-teal-600 bg-gradient-to-br from-teal-50 via-white to-cyan-50 shadow-2xl shadow-teal-200/50' 
+                        : 'border-2 border-gray-100 bg-white hover:border-teal-400 shadow-xl hover:shadow-2xl'
                       }
                     `}
                     onClick={() => setSelectedDoctor(doctor)}
                   >
-                    {/* Doctor Header with Photo - Healthcare Green */}
+                    {/* Doctor Header with Photo - Teal/Cyan Theme */}
                     <div className="relative">
-                      <div className="h-40 bg-gradient-to-br from-green-600 via-green-700 to-emerald-800"></div>
+                      <div className="h-40 bg-gradient-to-br from-teal-600 via-cyan-700 to-blue-800"></div>
                       <div className="absolute -bottom-12 left-6">
                         <div className="w-24 h-24 rounded-2xl border-4 border-white overflow-hidden bg-white shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
                           {doctor.profilePhoto ? (
@@ -518,14 +511,14 @@ const AppointmentBooking = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-green-600 to-emerald-700 flex items-center justify-center">
+                            <div className="w-full h-full bg-gradient-to-br from-teal-600 to-cyan-700 flex items-center justify-center">
                               <UserIcon className="h-12 w-12 text-white" />
                             </div>
                           )}
                         </div>
                       </div>
                       
-                      {/* Availability Badge - Green Theme */}
+                      {/* Availability Badge - Teal Theme */}
                       <div className="absolute top-4 right-4">
                         <div className={`
                           inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold shadow-lg
@@ -544,14 +537,14 @@ const AppointmentBooking = () => {
                     <div className="p-6 pt-16">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <h3 className="font-bold text-2xl text-gray-900 mb-2 group-hover:text-green-600 transition-colors">{doctor.name}</h3>
-                          <p className="text-green-600 font-bold text-base">{doctor.specialization}</p>
+                          <h3 className="font-bold text-2xl text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">{doctor.name}</h3>
+                          <p className="text-teal-600 font-bold text-base">{doctor.specialization}</p>
                         </div>
                         
-                        {/* Consultation Fee - Green Theme */}
+                        {/* Consultation Fee - Teal Theme */}
                         {doctor.consultationFee && (
-                          <div className="text-right bg-green-50 px-4 py-3 rounded-xl border-2 border-green-300">
-                            <p className="text-2xl font-bold text-green-600">₹{doctor.consultationFee}</p>
+                          <div className="text-right bg-teal-50 px-4 py-3 rounded-xl border-2 border-teal-300">
+                            <p className="text-2xl font-bold text-teal-600">₹{doctor.consultationFee}</p>
                             <p className="text-xs text-gray-700 font-semibold">per session</p>
                           </div>
                         )}
@@ -567,18 +560,18 @@ const AppointmentBooking = () => {
                       </div>
 
                       {/* Experience and Education - Clean Healthcare Style */}
-                      <div className="space-y-3 mb-5 bg-gradient-to-br from-gray-50 to-green-50 p-5 rounded-xl border-2 border-gray-200">
+                      <div className="space-y-3 mb-5 bg-gradient-to-br from-gray-50 to-teal-50 p-5 rounded-xl border-2 border-gray-200">
                         <div className="flex items-center text-sm text-gray-800">
-                          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
-                            <ClockIcon className="h-5 w-5 text-green-600" />
+                          <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
+                            <ClockIcon className="h-5 w-5 text-teal-600" />
                           </div>
                           <span className="font-bold">{doctor.experience || '5+'} years of experience</span>
                         </div>
                         
                         {doctor.education && (
                           <div className="flex items-center text-sm text-gray-800">
-                            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
-                              <AcademicCapIcon className="h-5 w-5 text-green-600" />
+                            <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
+                              <AcademicCapIcon className="h-5 w-5 text-teal-600" />
                             </div>
                             <span className="truncate font-bold">{doctor.education}</span>
                           </div>
@@ -586,8 +579,8 @@ const AppointmentBooking = () => {
                         
                         {doctor.location && (
                           <div className="flex items-center text-sm text-gray-800">
-                            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
-                              <MapPinIcon className="h-5 w-5 text-green-600" />
+                            <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
+                              <MapPinIcon className="h-5 w-5 text-teal-600" />
                             </div>
                             <span className="font-medium">{doctor.location}</span>
                           </div>
@@ -601,11 +594,11 @@ const AppointmentBooking = () => {
                         </p>
                       )}
 
-                      {/* View Profile Link - Green Theme */}
+                      {/* View Profile Link - Teal Theme */}
                       <Link
                         to={`/profile/${doctor.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-green-600 hover:text-green-700 font-bold mb-5 inline-flex items-center group/link"
+                        className="text-sm text-teal-600 hover:text-teal-700 font-bold mb-5 inline-flex items-center group/link"
                       >
                         <UserIcon className="w-4 h-4 mr-1.5 group-hover/link:scale-110 transition-transform" />
                         View Full Profile
@@ -615,22 +608,22 @@ const AppointmentBooking = () => {
                       </Link>
 
                       {/* Consultation Types - Healthcare Clean */}
-                      <div className="flex items-center justify-between mb-5 bg-gradient-to-br from-white to-green-50 p-5 rounded-xl border-2 border-gray-200">
+                      <div className="flex items-center justify-between mb-5 bg-gradient-to-br from-white to-teal-50 p-5 rounded-xl border-2 border-gray-200">
                         <div className="flex flex-wrap gap-2">
                           {doctor.consultationTypes?.includes('video') && (
-                            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
+                            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
                               <VideoCameraIcon className="h-4 w-4 mr-2" />
                               Video Call
                             </div>
                           )}
                           {doctor.consultationTypes?.includes('phone') && (
-                            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
+                            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
                               <PhoneIcon className="h-4 w-4 mr-2" />
                               Phone Call
                             </div>
                           )}
                           {doctor.consultationTypes?.includes('clinic') && (
-                            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
+                            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
                               <MapPinIcon className="h-4 w-4 mr-2" />
                               In-Clinic
                             </div>
@@ -640,18 +633,18 @@ const AppointmentBooking = () => {
                         {/* Next Available */}
                         <div className="text-right ml-4">
                           <p className="text-xs text-gray-600 font-bold mb-0.5">Next available</p>
-                          <p className="text-sm font-bold text-green-600">Today 2:30 PM</p>
+                          <p className="text-sm font-bold text-teal-600">Today 2:30 PM</p>
                         </div>
                       </div>
 
-                      {/* Book Appointment Button - Healthcare Green CTA */}
+                      {/* Book Appointment Button - Healthcare Teal CTA */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedDoctor(doctor);
                           setStep(2);
                         }}
-                        className="w-full px-8 py-5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-lg flex items-center justify-center gap-3 group/button transform hover:scale-[1.02]"
+                        className="w-full px-8 py-5 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-lg flex items-center justify-center gap-3 group/button transform hover:scale-[1.02]"
                       >
                         <CalendarIcon className="h-6 w-6 group-hover/button:rotate-12 transition-transform" />
                         Book Appointment Now
