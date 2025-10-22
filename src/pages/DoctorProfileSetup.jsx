@@ -14,7 +14,8 @@ import {
   DocumentTextIcon,
   CameraIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
@@ -34,6 +35,10 @@ const DoctorProfileSetup = () => {
     videoConsultationFee: '',
     languages: [],
     clinicAddress: '',
+    profilePhoto: null,
+    profilePhotoURL: '',
+    bannerPhoto: null,
+    bannerPhotoURL: '',
     workingHours: {
       monday: { start: '09:00', end: '17:00', available: true },
       tuesday: { start: '09:00', end: '17:00', available: true },
@@ -91,6 +96,22 @@ const DoctorProfileSetup = () => {
     }));
   };
 
+  const handlePhotoUpload = (field, file) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileData(prev => ({
+          ...prev,
+          [field]: file,
+          [`${field}URL`]: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast.error('Please upload a valid image file');
+    }
+  };
+
   const handleLanguageToggle = (language) => {
     setProfileData(prev => ({
       ...prev,
@@ -116,7 +137,15 @@ const DoctorProfileSetup = () => {
   const validateStep = (stepNumber) => {
     switch (stepNumber) {
       case 1:
-        return profileData.displayName && profileData.specialization && profileData.licenseNumber;
+        if (!profileData.displayName || !profileData.specialization || !profileData.licenseNumber) {
+          toast.error('Please fill in all basic information fields');
+          return false;
+        }
+        if (!profileData.profilePhotoURL || !profileData.bannerPhotoURL) {
+          toast.error('Profile photo and banner image are required');
+          return false;
+        }
+        return true;
       case 2:
         return profileData.experience && profileData.education && profileData.bio;
       case 3:
@@ -267,6 +296,113 @@ const DoctorProfileSetup = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="123 Medical Center Dr, City, State"
                   />
+                </div>
+              </div>
+
+              {/* Photo Upload Section */}
+              <div className="mt-8 space-y-6">
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <CameraIcon className="h-5 w-5 mr-2 text-blue-600" />
+                    Profile Images *
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Upload your professional photo and banner image. These are required to help patients recognize you.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Profile Photo Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Profile Photo * 
+                        <span className="text-xs text-red-600 ml-1">(Required)</span>
+                      </label>
+                      <div className="relative">
+                        {profileData.profilePhotoURL ? (
+                          <div className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-green-500">
+                            <img
+                              src={profileData.profilePhotoURL}
+                              alt="Profile Preview"
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('profilePhotoURL', '')}
+                              className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                            >
+                              <XMarkIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                            <div className="flex flex-col items-center justify-center py-8">
+                              <CameraIcon className="h-12 w-12 text-gray-400 mb-3" />
+                              <p className="text-sm text-gray-600 font-medium mb-1">Upload Profile Photo</p>
+                              <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoUpload('profilePhoto', e.target.files[0])}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Banner Photo Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Banner Image * 
+                        <span className="text-xs text-red-600 ml-1">(Required)</span>
+                      </label>
+                      <div className="relative">
+                        {profileData.bannerPhotoURL ? (
+                          <div className="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-green-500">
+                            <img
+                              src={profileData.bannerPhotoURL}
+                              alt="Banner Preview"
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('bannerPhotoURL', '')}
+                              className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                            >
+                              <XMarkIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                            <div className="flex flex-col items-center justify-center py-8">
+                              <CameraIcon className="h-12 w-12 text-gray-400 mb-3" />
+                              <p className="text-sm text-gray-600 font-medium mb-1">Upload Banner Image</p>
+                              <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handlePhotoUpload('bannerPhoto', e.target.files[0])}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {(!profileData.profilePhotoURL || !profileData.bannerPhotoURL) && (
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm text-amber-800 font-medium">Required Images Missing</p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Both profile photo and banner image are required to proceed. These help patients identify and trust your profile.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>

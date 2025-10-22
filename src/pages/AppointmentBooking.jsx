@@ -560,7 +560,7 @@ const AppointmentBooking = () => {
                       </Link>
 
                       {/* Consultation Types */}
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex space-x-2">
                           {doctor.consultationTypes?.includes('video') && (
                             <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs flex items-center">
@@ -588,6 +588,19 @@ const AppointmentBooking = () => {
                           <p className="text-xs font-medium text-green-600">Today 2:30 PM</p>
                         </div>
                       </div>
+
+                      {/* Book Appointment Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDoctor(doctor);
+                          setStep(2);
+                        }}
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-medium text-sm flex items-center justify-center gap-2"
+                      >
+                        <CalendarIcon className="h-4 w-4" />
+                        Book Appointment
+                      </button>
                     </div>
                   </motion.div>
                   ))
