@@ -80,6 +80,11 @@ const AppointmentBooking = () => {
     fetchDoctors();
   }, []);
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
   const fetchDoctors = async () => {
     try {
       setLoading(true);
