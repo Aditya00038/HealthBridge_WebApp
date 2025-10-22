@@ -473,21 +473,22 @@ const AppointmentBooking = () => {
                   filteredDoctors.map((doctor) => (
                   <motion.div
                     key={doctor.id}
-                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileHover={{ scale: 1.01, y: -4 }}
+                    transition={{ duration: 0.2 }}
                     className={`
-                      rounded-xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl overflow-hidden
+                      rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden group
                       ${selectedDoctor?.id === doctor.id 
-                        ? 'border-2 border-hb-primary bg-gradient-to-r from-blue-50 to-blue-100 shadow-blue-200' 
-                        : 'border border-gray-200 bg-white hover:border-hb-primary'
+                        ? 'border-2 border-blue-600 bg-gradient-to-br from-blue-50 via-white to-blue-50 shadow-2xl shadow-blue-200/50' 
+                        : 'border-2 border-gray-100 bg-white hover:border-blue-300 shadow-xl hover:shadow-2xl'
                       }
                     `}
                     onClick={() => setSelectedDoctor(doctor)}
                   >
                     {/* Doctor Header with Photo */}
                     <div className="relative">
-                      <div className="h-32 bg-gradient-hb-primary"></div>
-                      <div className="absolute -bottom-8 left-6">
-                        <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
+                      <div className="h-40 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700"></div>
+                      <div className="absolute -bottom-12 left-6">
+                        <div className="w-24 h-24 rounded-2xl border-4 border-white overflow-hidden bg-white shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
                           {doctor.profilePhoto ? (
                             <img
                               src={doctor.profilePhoto}
@@ -495,8 +496,8 @@ const AppointmentBooking = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-hb-primary flex items-center justify-center">
-                              <UserIcon className="h-8 w-8 text-white" />
+                            <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                              <UserIcon className="h-12 w-12 text-white" />
                             </div>
                           )}
                         </div>
@@ -505,68 +506,75 @@ const AppointmentBooking = () => {
                       {/* Availability Badge */}
                       <div className="absolute top-4 right-4">
                         <div className={`
-                          inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                          inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold shadow-lg
                           ${doctor.available 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-red-500 text-white'
+                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
+                            : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
                           }
                         `}>
-                          {doctor.available ? '● Available Now' : '● Busy'}
+                          <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                          {doctor.available ? 'Available Now' : 'Busy'}
                         </div>
                       </div>
                     </div>
 
                     {/* Doctor Info */}
-                    <div className="p-6 pt-12">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-900 mb-1">{doctor.name}</h3>
-                          <p className="text-hb-primary font-medium text-sm">{doctor.specialization}</p>
+                    <div className="p-6 pt-16">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-2xl text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{doctor.name}</h3>
+                          <p className="text-blue-600 font-semibold text-base">{doctor.specialization}</p>
                         </div>
                         
                         {/* Consultation Fee */}
                         {doctor.consultationFee && (
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-green-600">₹{doctor.consultationFee}</p>
-                            <p className="text-xs text-gray-500">consultation</p>
+                          <div className="text-right bg-green-50 px-4 py-3 rounded-xl border-2 border-green-200">
+                            <p className="text-2xl font-bold text-green-600">₹{doctor.consultationFee}</p>
+                            <p className="text-xs text-gray-600 font-medium">per session</p>
                           </div>
                         )}
                       </div>
 
                       {/* Rating and Reviews */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full">
-                          <StarSolidIcon className="h-4 w-4 text-yellow-500 mr-1" />
-                          <span className="text-sm font-semibold text-gray-900">{doctor.rating || 4.5}</span>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center bg-gradient-to-r from-yellow-50 to-orange-50 px-3 py-2 rounded-xl border-2 border-yellow-200 shadow-sm">
+                          <StarSolidIcon className="h-5 w-5 text-yellow-500 mr-1.5" />
+                          <span className="text-base font-bold text-gray-900">{doctor.rating || 4.5}</span>
                         </div>
-                        <span className="text-sm text-gray-600">({doctor.reviewCount || 127} reviews)</span>
+                        <span className="text-sm text-gray-600 font-medium">({doctor.reviewCount || 127} reviews)</span>
                       </div>
 
                       {/* Experience and Education */}
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <AcademicCapIcon className="h-4 w-4 mr-2 text-blue-500" />
-                          <span>{doctor.experience || '5+'} years experience</span>
+                      <div className="space-y-3 mb-5 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div className="flex items-center text-sm text-gray-700">
+                          <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <AcademicCapIcon className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <span className="font-medium">{doctor.experience || '5+'} years experience</span>
                         </div>
                         
                         {doctor.education && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <AcademicCapIcon className="h-4 w-4 mr-2 text-green-500" />
-                            <span className="truncate">{doctor.education}</span>
+                          <div className="flex items-center text-sm text-gray-700">
+                            <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                              <AcademicCapIcon className="h-5 w-5 text-green-600" />
+                            </div>
+                            <span className="truncate font-medium">{doctor.education}</span>
                           </div>
                         )}
                         
                         {doctor.location && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPinIcon className="h-4 w-4 mr-2 text-red-500" />
-                            <span>{doctor.location}</span>
+                          <div className="flex items-center text-sm text-gray-700">
+                            <div className="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                              <MapPinIcon className="h-5 w-5 text-red-600" />
+                            </div>
+                            <span className="font-medium">{doctor.location}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Bio/Description */}
                       {doctor.bio && (
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
                           {doctor.bio}
                         </p>
                       )}
@@ -575,39 +583,42 @@ const AppointmentBooking = () => {
                       <Link
                         to={`/profile/${doctor.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-hb-primary hover:text-hb-primary-dark font-medium mb-4 inline-flex items-center group"
+                        className="text-sm text-blue-600 hover:text-blue-700 font-semibold mb-4 inline-flex items-center group/link"
                       >
-                        <UserIcon className="w-4 h-4 mr-1 group-hover:scale-110 transition-transform" />
+                        <UserIcon className="w-4 h-4 mr-1.5 group-hover/link:scale-110 transition-transform" />
                         View Full Profile
+                        <svg className="w-4 h-4 ml-1 group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </Link>
 
                       {/* Consultation Types */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex space-x-2">
+                      <div className="flex items-center justify-between mb-5 bg-gradient-to-r from-gray-50 to-blue-50 p-4 rounded-xl border border-gray-200">
+                        <div className="flex flex-wrap gap-2">
                           {doctor.consultationTypes?.includes('video') && (
-                            <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs flex items-center">
-                              <VideoCameraIcon className="h-3 w-3 mr-1" />
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-md">
+                              <VideoCameraIcon className="h-4 w-4 mr-1.5" />
                               Video
                             </div>
                           )}
                           {doctor.consultationTypes?.includes('phone') && (
-                            <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs flex items-center">
-                              <PhoneIcon className="h-3 w-3 mr-1" />
+                            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-md">
+                              <PhoneIcon className="h-4 w-4 mr-1.5" />
                               Phone
                             </div>
                           )}
                           {doctor.consultationTypes?.includes('clinic') && (
-                            <div className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs flex items-center">
-                              <MapPinIcon className="h-3 w-3 mr-1" />
+                            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-md">
+                              <MapPinIcon className="h-4 w-4 mr-1.5" />
                               Clinic
                             </div>
                           )}
                         </div>
                         
                         {/* Next Available */}
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500">Next available</p>
-                          <p className="text-xs font-medium text-green-600">Today 2:30 PM</p>
+                        <div className="text-right ml-4">
+                          <p className="text-xs text-gray-600 font-medium mb-0.5">Next available</p>
+                          <p className="text-sm font-bold text-green-600">Today 2:30 PM</p>
                         </div>
                       </div>
 
@@ -618,10 +629,13 @@ const AppointmentBooking = () => {
                           setSelectedDoctor(doctor);
                           setStep(2);
                         }}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-medium text-sm flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white rounded-xl hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-base flex items-center justify-center gap-3 group/button transform hover:scale-[1.02]"
                       >
-                        <CalendarIcon className="h-5 w-5" />
-                        Book Appointment
+                        <CalendarIcon className="h-6 w-6 group-hover/button:rotate-12 transition-transform" />
+                        Book Appointment Now
+                        <svg className="w-5 h-5 group-hover/button:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
                       </button>
                     </div>
                   </motion.div>
