@@ -227,29 +227,6 @@ const AppointmentBooking = () => {
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">Schedule your consultation with our healthcare professionals and take control of your health journey</p>
         </motion.div>
 
-        {/* Progress Steps */}
-        <div className="flex justify-center mb-12">
-          <div className="flex items-center space-x-4">
-            {[1, 2, 3, 4].map((stepNum) => (
-              <div key={stepNum} className="flex items-center">
-                <div className={`
-                  w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 shadow-lg
-                  ${step >= stepNum ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-blue-200' : 'bg-white text-gray-500 shadow-gray-200'}
-                `}>
-                  {stepNum === 4 && bookingSuccess ? (
-                    <CheckCircleIcon className="h-5 w-5" />
-                  ) : (
-                    stepNum
-                  )}
-                </div>
-                {stepNum < 4 && (
-                  <div className={`w-16 h-1 mx-2 ${step > stepNum ? 'bg-blue-600' : 'bg-gray-200'}`} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
         <AnimatePresence mode="wait">
           {/* Step 1: Select Doctor */}
           {step === 1 && (
