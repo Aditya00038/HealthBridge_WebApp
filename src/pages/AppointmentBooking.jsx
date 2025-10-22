@@ -221,7 +221,7 @@ const AppointmentBooking = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Healthcare Professional Hero Section - Improved Colors */}
+      {/* Healthcare Professional Hero Section - Clean & Minimal */}
       <div className="bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white relative overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute inset-0 opacity-10">
@@ -238,25 +238,9 @@ const AppointmentBooking = () => {
             <h1 className="text-5xl md:text-6xl font-bold mb-4 text-white leading-tight">
               Book Your Appointment
             </h1>
-            <p className="text-xl md:text-2xl text-teal-100 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+            <p className="text-xl md:text-2xl text-teal-100 max-w-3xl mx-auto leading-relaxed font-light">
               Connect with qualified healthcare professionals instantly
             </p>
-            
-            {/* Compact Stats */}
-            <div className="flex justify-center gap-4 flex-wrap">
-              <div className="bg-white/95 px-6 py-3 rounded-xl shadow-lg">
-                <div className="text-2xl font-bold text-gray-900">{doctors.length}+</div>
-                <div className="text-xs text-gray-600 font-medium">Doctors</div>
-              </div>
-              <div className="bg-white/95 px-6 py-3 rounded-xl shadow-lg">
-                <div className="text-2xl font-bold text-gray-900">4.8★</div>
-                <div className="text-xs text-gray-600 font-medium">Rating</div>
-              </div>
-              <div className="bg-white/95 px-6 py-3 rounded-xl shadow-lg">
-                <div className="text-2xl font-bold text-gray-900">24/7</div>
-                <div className="text-xs text-gray-600 font-medium">Support</div>
-              </div>
-            </div>
           </motion.div>
         </div>
       </div>
