@@ -596,25 +596,15 @@ const AppointmentBooking = () => {
                           setSelectedDoctor(doctor);
                           setStep(2);
                         }}
-                        className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-medium text-sm flex items-center justify-center gap-2"
+                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg font-medium text-sm flex items-center justify-center gap-2"
                       >
-                        <CalendarIcon className="h-4 w-4" />
+                        <CalendarIcon className="h-5 w-5" />
                         Book Appointment
                       </button>
                     </div>
                   </motion.div>
                   ))
                 )}
-              </div>
-
-              <div className="flex justify-end mt-8">
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={!selectedDoctor}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-                >
-                  Next: Select Date & Time →
-                </button>
               </div>
             </motion.div>
           )}
