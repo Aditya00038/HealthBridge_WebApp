@@ -488,22 +488,22 @@ const AppointmentBooking = () => {
                   filteredDoctors.map((doctor) => (
                   <motion.div
                     key={doctor.id}
-                    whileHover={{ scale: 1.01, y: -4 }}
+                    whileHover={{ scale: 1.01, y: -2 }}
                     transition={{ duration: 0.2 }}
                     className={`
-                      rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden group
+                      rounded-xl cursor-pointer transition-all duration-300 overflow-hidden group
                       ${selectedDoctor?.id === doctor.id 
-                        ? 'border-2 border-teal-600 bg-gradient-to-br from-teal-50 via-white to-cyan-50 shadow-2xl shadow-teal-200/50' 
-                        : 'border-2 border-gray-100 bg-white hover:border-teal-400 shadow-xl hover:shadow-2xl'
+                        ? 'border-2 border-teal-600 bg-gradient-to-br from-teal-50 via-white to-cyan-50 shadow-xl shadow-teal-200/50' 
+                        : 'border border-gray-200 bg-white hover:border-teal-400 shadow-md hover:shadow-lg'
                       }
                     `}
                     onClick={() => setSelectedDoctor(doctor)}
                   >
-                    {/* Doctor Header with Photo - Teal/Cyan Theme */}
+                    {/* Compact Doctor Header with Photo */}
                     <div className="relative">
-                      <div className="h-40 bg-gradient-to-br from-teal-600 via-cyan-700 to-blue-800"></div>
-                      <div className="absolute -bottom-12 left-6">
-                        <div className="w-24 h-24 rounded-2xl border-4 border-white overflow-hidden bg-white shadow-xl group-hover:shadow-2xl transition-shadow duration-300">
+                      <div className="h-24 bg-gradient-to-br from-teal-600 via-cyan-700 to-blue-800"></div>
+                      <div className="absolute -bottom-8 left-4">
+                        <div className="w-16 h-16 rounded-xl border-3 border-white overflow-hidden bg-white shadow-lg">
                           {doctor.profilePhoto ? (
                             <img
                               src={doctor.profilePhoto}
@@ -512,145 +512,101 @@ const AppointmentBooking = () => {
                             />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-teal-600 to-cyan-700 flex items-center justify-center">
-                              <UserIcon className="h-12 w-12 text-white" />
+                              <UserIcon className="h-8 w-8 text-white" />
                             </div>
                           )}
                         </div>
                       </div>
                       
-                      {/* Availability Badge - Teal Theme */}
-                      <div className="absolute top-4 right-4">
+                      {/* Compact Availability Badge */}
+                      <div className="absolute top-2 right-2">
                         <div className={`
-                          inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold shadow-lg
+                          inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold shadow-md
                           ${doctor.available 
-                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
-                            : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-red-500 text-white'
                           }
                         `}>
-                          <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                          {doctor.available ? 'Available Now' : 'Busy'}
+                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                          {doctor.available ? 'Available' : 'Busy'}
                         </div>
                       </div>
                     </div>
 
-                    {/* Doctor Info - Healthcare Professional */}
-                    <div className="p-6 pt-16">
-                      <div className="flex items-start justify-between mb-4">
+                    {/* Compact Doctor Info */}
+                    <div className="p-4 pt-10">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h3 className="font-bold text-2xl text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">{doctor.name}</h3>
-                          <p className="text-teal-600 font-bold text-base">{doctor.specialization}</p>
+                          <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">{doctor.name}</h3>
+                          <p className="text-teal-600 font-semibold text-sm">{doctor.specialization}</p>
                         </div>
                         
-                        {/* Consultation Fee - Teal Theme */}
+                        {/* Compact Fee Badge */}
                         {doctor.consultationFee && (
-                          <div className="text-right bg-teal-50 px-4 py-3 rounded-xl border-2 border-teal-300">
-                            <p className="text-2xl font-bold text-teal-600">₹{doctor.consultationFee}</p>
-                            <p className="text-xs text-gray-700 font-semibold">per session</p>
+                          <div className="text-right bg-teal-50 px-3 py-2 rounded-lg border border-teal-300">
+                            <p className="text-lg font-bold text-teal-600">₹{doctor.consultationFee}</p>
+                            <p className="text-xs text-gray-600 font-medium">fee</p>
                           </div>
                         )}
                       </div>
 
-                      {/* Rating and Reviews */}
-                      <div className="flex items-center gap-3 mb-5">
-                        <div className="flex items-center bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-2 rounded-xl border-2 border-amber-300 shadow-sm">
-                          <StarSolidIcon className="h-5 w-5 text-amber-500 mr-1.5" />
-                          <span className="text-base font-bold text-gray-900">{doctor.rating || 4.5}</span>
+                      {/* Compact Rating */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                          <StarSolidIcon className="h-4 w-4 text-amber-500 mr-1" />
+                          <span className="text-sm font-bold text-gray-900">{doctor.rating || 4.5}</span>
                         </div>
-                        <span className="text-sm text-gray-700 font-semibold">({doctor.reviewCount || 127} patient reviews)</span>
+                        <span className="text-xs text-gray-600">({doctor.reviewCount || 127} reviews)</span>
                       </div>
 
-                      {/* Experience and Education - Clean Healthcare Style */}
-                      <div className="space-y-3 mb-5 bg-gradient-to-br from-gray-50 to-teal-50 p-5 rounded-xl border-2 border-gray-200">
-                        <div className="flex items-center text-sm text-gray-800">
-                          <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
-                            <ClockIcon className="h-5 w-5 text-teal-600" />
-                          </div>
-                          <span className="font-bold">{doctor.experience || '5+'} years of experience</span>
+                      {/* Compact Experience Info */}
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center text-xs text-gray-700">
+                          <ClockIcon className="h-4 w-4 text-teal-600 mr-2" />
+                          <span className="font-semibold">{doctor.experience || '5+'} years exp</span>
                         </div>
-                        
-                        {doctor.education && (
-                          <div className="flex items-center text-sm text-gray-800">
-                            <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
-                              <AcademicCapIcon className="h-5 w-5 text-teal-600" />
-                            </div>
-                            <span className="truncate font-bold">{doctor.education}</span>
-                          </div>
-                        )}
                         
                         {doctor.location && (
-                          <div className="flex items-center text-sm text-gray-800">
-                            <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center mr-3 shadow-sm">
-                              <MapPinIcon className="h-5 w-5 text-teal-600" />
-                            </div>
+                          <div className="flex items-center text-xs text-gray-700">
+                            <MapPinIcon className="h-4 w-4 text-teal-600 mr-2" />
                             <span className="font-medium">{doctor.location}</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Bio/Description */}
-                      {doctor.bio && (
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
-                          {doctor.bio}
-                        </p>
-                      )}
-
-                      {/* View Profile Link - Teal Theme */}
-                      <Link
-                        to={`/profile/${doctor.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-teal-600 hover:text-teal-700 font-bold mb-5 inline-flex items-center group/link"
-                      >
-                        <UserIcon className="w-4 h-4 mr-1.5 group-hover/link:scale-110 transition-transform" />
-                        View Full Profile
-                        <svg className="w-4 h-4 ml-1 group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-
-                      {/* Consultation Types - Healthcare Clean */}
-                      <div className="flex items-center justify-between mb-5 bg-gradient-to-br from-white to-teal-50 p-5 rounded-xl border-2 border-gray-200">
-                        <div className="flex flex-wrap gap-2">
-                          {doctor.consultationTypes?.includes('video') && (
-                            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
-                              <VideoCameraIcon className="h-4 w-4 mr-2" />
-                              Video Call
-                            </div>
-                          )}
-                          {doctor.consultationTypes?.includes('phone') && (
-                            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
-                              <PhoneIcon className="h-4 w-4 mr-2" />
-                              Phone Call
-                            </div>
-                          )}
-                          {doctor.consultationTypes?.includes('clinic') && (
-                            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-md">
-                              <MapPinIcon className="h-4 w-4 mr-2" />
-                              In-Clinic
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Next Available */}
-                        <div className="text-right ml-4">
-                          <p className="text-xs text-gray-600 font-bold mb-0.5">Next available</p>
-                          <p className="text-sm font-bold text-teal-600">Today 2:30 PM</p>
-                        </div>
+                      {/* Compact Consultation Types */}
+                      <div className="flex items-center gap-2 mb-3">
+                        {doctor.consultationTypes?.includes('video') && (
+                          <div className="bg-teal-100 text-teal-700 px-2 py-1 rounded-md text-xs font-bold flex items-center">
+                            <VideoCameraIcon className="h-3 w-3 mr-1" />
+                            Video
+                          </div>
+                        )}
+                        {doctor.consultationTypes?.includes('phone') && (
+                          <div className="bg-teal-100 text-teal-700 px-2 py-1 rounded-md text-xs font-bold flex items-center">
+                            <PhoneIcon className="h-3 w-3 mr-1" />
+                            Phone
+                          </div>
+                        )}
+                        {doctor.consultationTypes?.includes('clinic') && (
+                          <div className="bg-teal-100 text-teal-700 px-2 py-1 rounded-md text-xs font-bold flex items-center">
+                            <MapPinIcon className="h-3 w-3 mr-1" />
+                            Clinic
+                          </div>
+                        )}
                       </div>
 
-                      {/* Book Appointment Button - Healthcare Teal CTA */}
+                      {/* Compact Book Button */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedDoctor(doctor);
                           setStep(2);
                         }}
-                        className="w-full px-8 py-5 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-2xl font-bold text-lg flex items-center justify-center gap-3 group/button transform hover:scale-[1.02]"
+                        className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 shadow-md hover:shadow-lg font-bold text-sm flex items-center justify-center gap-2 group/button"
                       >
-                        <CalendarIcon className="h-6 w-6 group-hover/button:rotate-12 transition-transform" />
-                        Book Appointment Now
-                        <svg className="w-5 h-5 group-hover/button:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
+                        <CalendarIcon className="h-5 w-5" />
+                        Book Appointment
                       </button>
                     </div>
                   </motion.div>
