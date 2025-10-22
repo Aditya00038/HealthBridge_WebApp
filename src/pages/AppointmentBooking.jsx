@@ -263,10 +263,10 @@ const AppointmentBooking = () => {
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`
-                        flex items-center px-4 py-2 rounded-lg font-medium transition-colors
+                        flex items-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm
                         ${showFilters 
-                          ? 'bg-hb-primary text-white' 
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-blue-200' 
+                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                         }
                       `}
                     >
@@ -274,17 +274,25 @@ const AppointmentBooking = () => {
                       Filters
                     </button>
                     
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="input-hb min-w-[140px]"
-                    >
-                      {sortOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <AdjustmentsHorizontalIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="appearance-none bg-white border border-gray-300 text-gray-700 pl-10 pr-10 py-2.5 rounded-lg font-medium hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer shadow-sm min-w-[200px]"
+                      >
+                        {sortOptions.map(option => (
+                          <option key={option.value} value={option.value} className="py-2">
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -301,16 +309,17 @@ const AppointmentBooking = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Specialization Filter */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <AcademicCapIcon className="h-4 w-4 mr-1.5 text-blue-600" />
                             Specialization
                           </label>
                           <select
                             value={selectedSpecialization}
                             onChange={(e) => setSelectedSpecialization(e.target.value)}
-                            className="input-hb w-full"
+                            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-4 py-2.5 pr-10 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer shadow-sm"
                           >
                             {specializations.map(spec => (
-                              <option key={spec} value={spec}>
+                              <option key={spec} value={spec} className="py-2">
                                 {spec === 'all' ? 'All Specializations' : spec}
                               </option>
                             ))}
@@ -319,16 +328,17 @@ const AppointmentBooking = () => {
 
                         {/* Experience Filter */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <ClockIcon className="h-4 w-4 mr-1.5 text-green-600" />
                             Experience
                           </label>
                           <select
                             value={experienceFilter}
                             onChange={(e) => setExperienceFilter(e.target.value)}
-                            className="input-hb w-full"
+                            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-4 py-2.5 pr-10 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer shadow-sm"
                           >
                             {experienceOptions.map(option => (
-                              <option key={option.value} value={option.value}>
+                              <option key={option.value} value={option.value} className="py-2">
                                 {option.label}
                               </option>
                             ))}
@@ -337,16 +347,17 @@ const AppointmentBooking = () => {
 
                         {/* Rating Filter */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <StarIcon className="h-4 w-4 mr-1.5 text-yellow-500" />
                             Rating
                           </label>
                           <select
                             value={ratingFilter}
                             onChange={(e) => setRatingFilter(e.target.value)}
-                            className="input-hb w-full"
+                            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-4 py-2.5 pr-10 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer shadow-sm"
                           >
                             {ratingOptions.map(option => (
-                              <option key={option.value} value={option.value}>
+                              <option key={option.value} value={option.value} className="py-2">
                                 {option.label}
                               </option>
                             ))}
