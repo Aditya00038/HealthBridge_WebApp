@@ -163,14 +163,16 @@ const AppointmentBooking = () => {
         patientName: user.displayName || user.email,
         doctorId: selectedDoctor.id,
         doctorName: selectedDoctor.name,
-        appointmentDate: new Date(selectedDate + 'T' + convertTo24Hour(selectedTime)),
+        appointmentDate: selectedDate, // Store as string (e.g., "2025-11-15")
+        appointmentTime: selectedTime, // Store as string (e.g., "10:00 AM")
         status: 'pending',
         type: appointmentType,
-        time: selectedTime,
         reason: reason,
         specialization: selectedDoctor.specialization
       };
 
+      console.log('Creating appointment with data:', appointmentData);
+      
       await appointmentServices.createAppointment(appointmentData);
       setBookingSuccess(true);
       setStep(4);

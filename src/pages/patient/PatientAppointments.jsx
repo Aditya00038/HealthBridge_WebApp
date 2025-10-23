@@ -74,8 +74,11 @@ const PatientAppointments = () => {
     if (filter === 'all') return true;
     if (filter === 'upcoming') {
       const now = new Date();
-      const appointmentDate = new Date(`${appointment.appointmentDate} ${appointment.appointmentTime}`);
-      return appointmentDate > now && (appointment.status === 'confirmed' || appointment.status === 'pending');
+      now.setHours(0, 0, 0, 0);
+      if (!appointment.appointmentDate) return false;
+      const appointmentDate = new Date(appointment.appointmentDate);
+      appointmentDate.setHours(0, 0, 0, 0);
+      return appointmentDate >= now && (appointment.status === 'confirmed' || appointment.status === 'pending');
     }
     return appointment.status === filter;
   });
@@ -84,8 +87,11 @@ const PatientAppointments = () => {
     { key: 'all', label: 'All Appointments', count: appointments.length },
     { key: 'upcoming', label: 'Upcoming', count: appointments.filter(apt => {
       const now = new Date();
-      const appointmentDate = new Date(`${apt.appointmentDate} ${apt.appointmentTime}`);
-      return appointmentDate > now && (apt.status === 'confirmed' || apt.status === 'pending');
+      now.setHours(0, 0, 0, 0);
+      if (!apt.appointmentDate) return false;
+      const appointmentDate = new Date(apt.appointmentDate);
+      appointmentDate.setHours(0, 0, 0, 0);
+      return appointmentDate >= now && (apt.status === 'confirmed' || apt.status === 'pending');
     }).length },
     { key: 'completed', label: 'Completed', count: appointments.filter(apt => apt.status === 'completed').length },
     { key: 'pending', label: 'Pending', count: appointments.filter(apt => apt.status === 'pending').length },
@@ -218,17 +224,21 @@ const PatientAppointments = () => {
                       <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                         <span className="flex items-center">
                           <CalendarDaysIcon className="w-4 h-4 mr-1" />
-                          {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
+                          {appointment.appointmentDate ? (
+                            new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })
+                          ) : (
+                            'Invalid Date'
+                          )}
                         </span>
                         
                         <span className="flex items-center">
                           <ClockIcon className="w-4 h-4 mr-1" />
-                          {appointment.appointmentTime}
+                          {appointment.appointmentTime || 'Time not set'}
                         </span>
                         
                         {appointment.appointmentType === 'video' && (
