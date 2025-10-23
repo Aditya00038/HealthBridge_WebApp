@@ -96,17 +96,56 @@ const DoctorProfileSetup = () => {
     }));
   };
 
-  const handlePhotoUpload = (field, file) => {
-    if (file && file.type.startsWith('image/')) {
+  const compressImage = (file, maxWidth = 800) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to base64 with compression
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(compressedBase64);
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handlePhotoUpload = async (field, file) => {
+    if (file && file.type.startsWith('image/')) {
+      try {
+        toast.loading('Processing image...');
+        const compressedImage = await compressImage(file, field === 'bannerPhoto' ? 1200 : 800);
         setProfileData(prev => ({
           ...prev,
           [field]: file,
-          [`${field}URL`]: reader.result
+          [`${field}URL`]: compressedImage
         }));
-      };
-      reader.readAsDataURL(file);
+        toast.dismiss();
+        toast.success('Image uploaded successfully!');
+      } catch (error) {
+        console.error('Error processing image:', error);
+        toast.dismiss();
+        toast.error('Failed to process image');
+      }
     } else {
       toast.error('Please upload a valid image file');
     }
@@ -138,27 +177,22 @@ const DoctorProfileSetup = () => {
     switch (stepNumber) {
       case 1:
         if (!profileData.displayName || !profileData.specialization || !profileData.licenseNumber) {
-          toast.error('Please fill in all required basic information fields');
           return false;
         }
         if (!profileData.profilePhotoURL || !profileData.bannerPhotoURL) {
-          toast.error('Profile photo and banner image are required');
           return false;
         }
         return true;
       case 2:
         if (!profileData.experience || !profileData.education || !profileData.bio) {
-          toast.error('Please fill in all professional details');
           return false;
         }
         return true;
       case 3:
         if (!profileData.consultationFee || !profileData.videoConsultationFee) {
-          toast.error('Please enter consultation fees');
           return false;
         }
         if (profileData.languages.length === 0) {
-          toast.error('Please select at least one language');
           return false;
         }
         return true;
@@ -168,30 +202,78 @@ const DoctorProfileSetup = () => {
   };
 
   const handleNext = () => {
-    if (validateStep(step)) {
-      setStep(prev => prev + 1);
-    } else {
-      toast.error('Please fill in all required fields');
+    // Validate current step
+    if (step === 1) {
+      if (!profileData.displayName || !profileData.specialization || !profileData.licenseNumber) {
+        toast.error('Please fill in all required basic information fields');
+        return;
+      }
+      if (!profileData.profilePhotoURL || !profileData.bannerPhotoURL) {
+        toast.error('Profile photo and banner image are required');
+        return;
+      }
+    } else if (step === 2) {
+      if (!profileData.experience || !profileData.education || !profileData.bio) {
+        toast.error('Please fill in all professional details');
+        return;
+      }
+    } else if (step === 3) {
+      if (!profileData.consultationFee || !profileData.videoConsultationFee) {
+        toast.error('Please enter consultation fees');
+        return;
+      }
+      if (profileData.languages.length === 0) {
+        toast.error('Please select at least one language');
+        return;
+      }
     }
+    
+    setStep(prev => prev + 1);
   };
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      toast.loading('Creating profile...');
       
+      console.log('Profile data before submission:', {
+        hasProfilePhoto: !!profileData.profilePhotoURL,
+        hasBannerPhoto: !!profileData.bannerPhotoURL,
+        profilePhotoSize: profileData.profilePhotoURL?.length,
+        bannerPhotoSize: profileData.bannerPhotoURL?.length
+      });
+      
+      // Prepare profile data without File objects
       const completeProfile = {
-        ...profileData,
+        displayName: profileData.displayName,
+        specialization: profileData.specialization,
+        licenseNumber: profileData.licenseNumber,
+        experience: profileData.experience + ' years',
+        education: profileData.education,
+        bio: profileData.bio,
         consultationFee: parseFloat(profileData.consultationFee),
         videoConsultationFee: parseFloat(profileData.videoConsultationFee),
-        experience: profileData.experience + ' years'
+        languages: profileData.languages,
+        clinicAddress: profileData.clinicAddress,
+        profilePhotoURL: profileData.profilePhotoURL, // Already compressed base64
+        bannerPhotoURL: profileData.bannerPhotoURL,   // Already compressed base64
+        workingHours: profileData.workingHours,
+        emergencyAvailable: profileData.emergencyAvailable,
+        rating: 4.5,
+        reviewCount: 0,
+        available: true,
+        verified: true,
+        createdAt: new Date().toISOString()
       };
 
       await doctorServices.createDoctorProfile(user.uid, completeProfile);
       
+      toast.dismiss();
       toast.success('Profile created successfully! You are now available for patient appointments.');
       navigate('/doctor/dashboard');
     } catch (error) {
       console.error('Error creating profile:', error);
+      toast.dismiss();
       toast.error('Failed to create profile. Please try again.');
     } finally {
       setLoading(false);
