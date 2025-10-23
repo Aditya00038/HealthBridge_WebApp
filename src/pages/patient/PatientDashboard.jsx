@@ -44,16 +44,23 @@ const PatientDashboard = () => {
       
       // Calculate stats
       const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      now.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
       
       const stats = {
         totalAppointments: appointmentData.length,
-        upcomingAppointments: appointmentData.filter(apt => 
-          new Date(apt.appointmentDate) >= today && apt.status === 'confirmed'
-        ).length,
+        upcomingAppointments: appointmentData.filter(apt => {
+          // Parse the appointment date
+          const aptDate = new Date(apt.appointmentDate);
+          aptDate.setHours(0, 0, 0, 0);
+          // Include confirmed and pending appointments that are in the future
+          return aptDate >= now && (apt.status === 'confirmed' || apt.status === 'pending');
+        }).length,
         completedAppointments: appointmentData.filter(apt => apt.status === 'completed').length,
         pendingAppointments: appointmentData.filter(apt => apt.status === 'pending').length
       };
+      
+      console.log('Appointment Stats:', stats);
+      console.log('All Appointments:', appointmentData);
       
       setStats(stats);
     } catch (error) {
