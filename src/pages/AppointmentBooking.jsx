@@ -407,10 +407,151 @@ const AppointmentBooking = () => {
                 </AnimatePresence>
               </div>
 
-              {/* Doctors Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Two Column Layout: Sidebar + Results */}
+              <div className="flex gap-6">
+                {/* Left Sidebar: Filters */}
+                <div className="w-72 flex-shrink-0">
+                  <div className="bg-white rounded-lg border border-gray-200 p-5 sticky top-24">
+                    {/* Filter Header */}
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="text-lg font-bold text-gray-900">Filters</h3>
+                      <button
+                        onClick={() => {
+                          setSelectedSpecialization('all');
+                          setExperienceFilter('all');
+                          setRatingFilter('all');
+                          setLocationFilter('all');
+                        }}
+                        className="text-sm text-teal-600 hover:text-teal-700 font-semibold"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+
+                    {/* Active Filters Display */}
+                    {(selectedSpecialization !== 'all' || locationFilter !== 'all') && (
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <div className="flex flex-wrap gap-2">
+                          {selectedSpecialization !== 'all' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
+                              {selectedSpecialization}
+                              <button onClick={() => setSelectedSpecialization('all')} className="hover:bg-teal-200 rounded-full p-0.5">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {locationFilter !== 'all' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-100 text-teal-700 rounded-full text-sm font-medium">
+                              {locationFilter}
+                              <button onClick={() => setLocationFilter('all')} className="hover:bg-teal-200 rounded-full p-0.5">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mode of Consult */}
+                    <div className="mb-5 pb-5 border-b border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-3 text-sm">Mode of Consult</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={true}
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Hospital Visit</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Online Consult</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Experience Filter */}
+                    <div className="mb-5 pb-5 border-b border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-3 text-sm">Experience (In Years)</h4>
+                      <div className="space-y-2">
+                        {experienceOptions.map(option => (
+                          <label key={option.value} className="flex items-center cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={experienceFilter === option.value}
+                              onChange={() => setExperienceFilter(option.value === experienceFilter ? 'all' : option.value)}
+                              className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                            />
+                            <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Fees Filter */}
+                    <div className="mb-5 pb-5 border-b border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-3 text-sm">Fees (In Rupees)</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">100-500</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">500-1000</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">1000+</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Gender Filter */}
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-gray-900 mb-3 text-sm">Gender</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Male</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Female</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Doctor Cards */}
+                <div className="flex-1">
+              <div className="space-y-4">
                 {filteredDoctors.length === 0 ? (
-                  <div className="col-span-full text-center py-16">
+                  <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
                     <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                       <UserIcon className="h-12 w-12 text-blue-600" />
                     </div>
@@ -451,20 +592,13 @@ const AppointmentBooking = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className={`
-                      bg-white rounded-lg cursor-pointer transition-all duration-300 overflow-hidden
-                      ${selectedDoctor?.id === doctor.id 
-                        ? 'border-2 border-teal-500 shadow-lg' 
-                        : 'border border-gray-200 hover:border-teal-300 hover:shadow-md'
-                      }
-                    `}
-                    onClick={() => setSelectedDoctor(doctor)}
+                    className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-300 p-5 mb-4"
                   >
                     {/* Horizontal Layout */}
-                    <div className="flex p-4">
+                    <div className="flex gap-5">
                       {/* Left: Doctor Photo */}
-                      <div className="flex-shrink-0 mr-4">
-                        <div className="w-28 h-28 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-100">
+                      <div className="flex-shrink-0">
+                        <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                           {doctor.profilePhoto ? (
                             <img
                               src={doctor.profilePhoto}
@@ -472,126 +606,85 @@ const AppointmentBooking = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center">
-                              <UserIcon className="h-14 w-14 text-teal-600" />
+                            <div className="w-full h-full bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center">
+                              <UserIcon className="h-12 w-12 text-teal-400" />
                             </div>
                           )}
-                        </div>
-                        <div className="mt-2 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // View profile action
-                            }}
-                            className="text-xs text-teal-600 hover:text-teal-700 font-semibold hover:underline"
-                          >
-                            View Profile
-                          </button>
                         </div>
                       </div>
 
                       {/* Middle: Doctor Info */}
-                      <div className="flex-1">
-                        {/* Doctor Name */}
-                        <h3 className="text-lg font-semibold text-teal-600 mb-1 hover:text-teal-700 cursor-pointer">
-                          {doctor.name}
-                        </h3>
-                        
-                        {/* Specialization */}
-                        <p className="text-gray-700 text-sm mb-2">{doctor.specialization}</p>
-                        
-                        {/* Experience */}
-                        <p className="text-gray-600 text-sm mb-3">
-                          {doctor.experience || '5+'} years experience overall
-                        </p>
-
-                        {/* Location and Hospital */}
-                        <div className="mb-3">
-                          <p className="text-sm text-gray-700 font-medium mb-1">
-                            {doctor.location || 'Viman Nagar, Pune'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {doctor.hospital || 'Multi-Specialty Clinic'} {doctor.hospitalCount ? `+ ${doctor.hospitalCount} more` : ''}
-                          </p>
-                        </div>
-
-                        {/* Consultation Fee */}
-                        {doctor.consultationFee && (
-                          <div className="mb-3">
-                            <p className="text-sm text-gray-700">
-                              ₹{doctor.consultationFee} Consultation fee at clinic
-                              <span className="ml-1 inline-flex items-center justify-center w-4 h-4 text-xs text-gray-500 border border-gray-400 rounded-full cursor-help" title="Consultation fee information">
-                                i
-                              </span>
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Rating and Reviews */}
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="flex items-center bg-green-600 text-white px-2 py-1 rounded">
-                            <span className="text-sm font-bold mr-1">👍</span>
-                            <span className="text-sm font-bold">{Math.round((doctor.rating || 4.5) * 20)}%</span>
-                          </div>
-                          <button className="text-sm text-gray-700 hover:text-teal-600 font-medium underline">
-                            {doctor.reviewCount || 127} Patient Stories
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Right: Availability and Actions */}
-                      <div className="flex-shrink-0 ml-4 flex flex-col items-end justify-between min-w-[200px]">
-                        {/* Availability */}
-                        <div className="mb-3">
-                          <div className="flex items-center text-sm mb-2">
-                            <CalendarIcon className="h-4 w-4 text-gray-500 mr-1" />
-                            <span className={`font-semibold ${doctor.available ? 'text-green-600' : 'text-gray-600'}`}>
-                              {doctor.available ? 'Available Tomorrow' : 'Available Today'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="w-full space-y-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDoctor(doctor);
-                              setStep(2);
-                            }}
-                            className="w-full px-4 py-3 bg-white text-teal-600 border-2 border-teal-600 rounded-lg hover:bg-teal-50 transition-all duration-300 font-bold text-sm"
-                          >
-                            Book Clinic Visit
-                            <div className="text-xs font-normal text-gray-600 mt-0.5">No Booking Fee</div>
-                          </button>
-                          
-                          {(doctor.consultationTypes?.includes('video') || doctor.consultationTypes?.includes('phone')) && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle contact action
-                              }}
-                              className="w-full px-4 py-2.5 bg-white text-teal-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 font-semibold text-sm flex items-center justify-center gap-2"
-                            >
-                              <PhoneIcon className="h-4 w-4" />
-                              Contact Clinic
-                            </button>
+                      <div className="flex-1 min-w-0">
+                        {/* Doctor Name with Verification */}
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-semibold text-gray-900 hover:text-teal-600 cursor-pointer">
+                            {doctor.name}
+                          </h3>
+                          {doctor.verified && (
+                            <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
                           )}
                         </div>
-                      </div>
-                    </div>
+                        
+                        {/* Specialization */}
+                        <p className="text-gray-600 text-base mb-2">{doctor.specialization}</p>
+                        
+                        {/* Experience & Qualifications */}
+                        <p className="text-sm text-blue-600 font-medium mb-2">
+                          {doctor.experience || '5'} YEARS • MBBS, MD, {doctor.degree || 'DM'}
+                        </p>
 
-                    {/* Verification Badge (if applicable) */}
-                    {doctor.verified && (
-                      <div className="absolute top-2 left-2">
-                        <div className="bg-blue-600 text-white p-1 rounded-full">
-                          <CheckCircleIcon className="h-5 w-5" />
+                        {/* Distance & Location */}
+                        <p className="text-sm text-gray-600 mb-2">
+                          5 KM • {doctor.location || 'Pune'}
+                        </p>
+
+                        {/* Hospital/Clinic */}
+                        <p className="text-sm text-gray-700 mb-3">
+                          {doctor.hospital || 'Apollo Clinic'}, {doctor.area || 'Viman Nagar'}, Pune
+                        </p>
+
+                        {/* Rating */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center bg-green-600 text-white px-2 py-1 rounded text-sm font-bold">
+                            <span className="mr-1">👍</span>
+                            {Math.round((doctor.rating || 4.5) * 20)}%
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            ({doctor.reviewCount || 75}+ Patients)
+                          </span>
                         </div>
                       </div>
-                    )}
+
+                      {/* Right: Fee and Action */}
+                      <div className="flex-shrink-0 flex flex-col items-end justify-between min-w-[260px]">
+                        {/* Consultation Fee */}
+                        <div className="text-right mb-4">
+                          <p className="text-2xl font-bold text-gray-900">₹{doctor.consultationFee || 700}</p>
+                        </div>
+
+                        {/* Visit Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDoctor(doctor);
+                            setStep(2);
+                          }}
+                          className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold text-sm transition-all duration-300 shadow-sm hover:shadow-md"
+                        >
+                          <div className="font-bold">Visit Doctor</div>
+                          <div className="text-xs font-normal opacity-90">
+                            Available in {doctor.availableIn || '3 days'}
+                          </div>
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                   ))
                 )}
+              </div>
+                </div>
               </div>
             </motion.div>
           )}
