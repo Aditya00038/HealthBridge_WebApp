@@ -25,10 +25,12 @@ const LocatePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const [selectedCity, setSelectedCity] = useState('mumbai');
+  const [selectedCity, setSelectedCity] = useState('pune');
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [facilities, setFacilities] = useState([]);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedFacilityDetails, setSelectedFacilityDetails] = useState(null);
 
   // Load facilities when city changes
   useEffect(() => {
@@ -278,6 +280,16 @@ const LocatePage = () => {
     }
   };
 
+  const handleViewDetails = (facility) => {
+    setSelectedFacilityDetails(facility);
+    setShowDetailsModal(true);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedFacilityDetails(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -459,11 +471,29 @@ const LocatePage = () => {
                     )}
                   </div>
 
-                  {/* Compact Action Button */}
-                  <button className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-bold text-sm hover:from-teal-700 hover:to-cyan-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
-                    <MapIcon className="w-4 h-4" />
-                    View Details
-                  </button>
+                  {/* Compact Action Buttons */}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetails(facility);
+                      }}
+                      className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-2.5 rounded-lg font-bold text-sm hover:from-teal-700 hover:to-cyan-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                    >
+                      <MapIcon className="w-4 h-4" />
+                      View Details
+                    </button>
+                    {facility.phone && (
+                      <a
+                        href={`tel:${facility.phone}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-4 py-2.5 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
+                        title="Call Hospital"
+                      >
+                        <PhoneIcon className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );
@@ -483,6 +513,169 @@ const LocatePage = () => {
           </motion.div>
         )}
           </>
+        )}
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedFacilityDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={closeDetailsModal}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="relative h-64 overflow-hidden rounded-t-2xl">
+                <img
+                  src={selectedFacilityDetails.image}
+                  alt={selectedFacilityDetails.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <button
+                  onClick={closeDetailsModal}
+                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-all shadow-lg"
+                >
+                  <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div className="absolute bottom-4 left-6 right-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="px-3 py-1 rounded-lg bg-teal-600 text-white text-sm font-bold flex items-center gap-1">
+                      {selectedFacilityDetails.type.charAt(0).toUpperCase() + selectedFacilityDetails.type.slice(1)}
+                    </span>
+                    {selectedFacilityDetails.distance && (
+                      <span className="px-3 py-1 rounded-lg bg-white text-gray-900 text-sm font-bold flex items-center gap-1">
+                        <MapPinIcon className="w-4 h-4 text-teal-600" />
+                        {selectedFacilityDetails.distance}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-1">{selectedFacilityDetails.name}</h2>
+                  <p className="text-white text-lg">{selectedFacilityDetails.specialty}</p>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                {/* Rating */}
+                <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-200">
+                  <div className="flex items-center bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">
+                    <StarIconSolid className="w-6 h-6 text-amber-500 mr-2" />
+                    <span className="text-2xl font-bold text-gray-900">{selectedFacilityDetails.rating}</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center mb-1">
+                      {renderStars(selectedFacilityDetails.rating)}
+                    </div>
+                    <span className="text-sm text-gray-600">{selectedFacilityDetails.reviews} reviews</span>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Contact Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <PhoneIcon className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Phone Number</p>
+                        <a href={`tel:${selectedFacilityDetails.phone}`} className="text-lg font-semibold text-teal-600 hover:text-teal-700">
+                          {selectedFacilityDetails.phone}
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MapIcon className="w-5 h-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Address</p>
+                        <p className="text-base font-medium text-gray-900">{selectedFacilityDetails.address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <ClockIcon className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Working Hours</p>
+                        <p className="text-base font-medium text-gray-900">{selectedFacilityDetails.hours}</p>
+                      </div>
+                    </div>
+                    {selectedFacilityDetails.doctors && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <UserGroupIcon className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Medical Staff</p>
+                          <p className="text-base font-medium text-gray-900">{selectedFacilityDetails.doctors} doctors available</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedFacilityDetails.website && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <GlobeAltIcon className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Website</p>
+                          <a 
+                            href={selectedFacilityDetails.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-base font-medium text-green-600 hover:text-green-700 underline"
+                          >
+                            Visit Website
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Services */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Available Services</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedFacilityDetails.services.map((service, idx) => (
+                      <span
+                        key={idx}
+                        className="px-4 py-2 bg-teal-50 text-teal-700 text-sm rounded-lg font-semibold border border-teal-200"
+                      >
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <a
+                    href={`tel:${selectedFacilityDetails.phone}`}
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-xl font-bold text-base hover:from-green-700 hover:to-green-800 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <PhoneIcon className="w-5 h-5" />
+                    Call Now
+                  </a>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedFacilityDetails.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-4 rounded-xl font-bold text-base hover:from-teal-700 hover:to-cyan-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <MapIcon className="w-5 h-5" />
+                    Get Directions
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </div>
     </div>
