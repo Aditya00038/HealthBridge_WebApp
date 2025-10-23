@@ -448,22 +448,23 @@ const AppointmentBooking = () => {
                   filteredDoctors.map((doctor) => (
                   <motion.div
                     key={doctor.id}
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
                     className={`
-                      rounded-xl cursor-pointer transition-all duration-300 overflow-hidden group
+                      bg-white rounded-lg cursor-pointer transition-all duration-300 overflow-hidden
                       ${selectedDoctor?.id === doctor.id 
-                        ? 'border-2 border-teal-600 bg-gradient-to-br from-teal-50 via-white to-cyan-50 shadow-xl shadow-teal-200/50' 
-                        : 'border border-gray-200 bg-white hover:border-teal-400 shadow-md hover:shadow-lg'
+                        ? 'border-2 border-teal-500 shadow-lg' 
+                        : 'border border-gray-200 hover:border-teal-300 hover:shadow-md'
                       }
                     `}
                     onClick={() => setSelectedDoctor(doctor)}
                   >
-                    {/* Compact Doctor Header with Photo */}
-                    <div className="relative">
-                      <div className="h-24 bg-gradient-to-br from-teal-600 via-cyan-700 to-blue-800"></div>
-                      <div className="absolute -bottom-8 left-4">
-                        <div className="w-16 h-16 rounded-xl border-3 border-white overflow-hidden bg-white shadow-lg">
+                    {/* Horizontal Layout */}
+                    <div className="flex p-4">
+                      {/* Left: Doctor Photo */}
+                      <div className="flex-shrink-0 mr-4">
+                        <div className="w-28 h-28 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-100">
                           {doctor.profilePhoto ? (
                             <img
                               src={doctor.profilePhoto}
@@ -471,104 +472,123 @@ const AppointmentBooking = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-teal-600 to-cyan-700 flex items-center justify-center">
-                              <UserIcon className="h-8 w-8 text-white" />
+                            <div className="w-full h-full bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center">
+                              <UserIcon className="h-14 w-14 text-teal-600" />
                             </div>
                           )}
                         </div>
-                      </div>
-                      
-                      {/* Compact Availability Badge */}
-                      <div className="absolute top-2 right-2">
-                        <div className={`
-                          inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold shadow-md
-                          ${doctor.available 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-red-500 text-white'
-                          }
-                        `}>
-                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                          {doctor.available ? 'Available' : 'Busy'}
+                        <div className="mt-2 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // View profile action
+                            }}
+                            className="text-xs text-teal-600 hover:text-teal-700 font-semibold hover:underline"
+                          >
+                            View Profile
+                          </button>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Compact Doctor Info */}
-                    <div className="p-4 pt-10">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">{doctor.name}</h3>
-                          <p className="text-teal-600 font-semibold text-sm">{doctor.specialization}</p>
-                        </div>
+                      {/* Middle: Doctor Info */}
+                      <div className="flex-1">
+                        {/* Doctor Name */}
+                        <h3 className="text-lg font-semibold text-teal-600 mb-1 hover:text-teal-700 cursor-pointer">
+                          {doctor.name}
+                        </h3>
                         
-                        {/* Compact Fee Badge */}
+                        {/* Specialization */}
+                        <p className="text-gray-700 text-sm mb-2">{doctor.specialization}</p>
+                        
+                        {/* Experience */}
+                        <p className="text-gray-600 text-sm mb-3">
+                          {doctor.experience || '5+'} years experience overall
+                        </p>
+
+                        {/* Location and Hospital */}
+                        <div className="mb-3">
+                          <p className="text-sm text-gray-700 font-medium mb-1">
+                            {doctor.location || 'Viman Nagar, Pune'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {doctor.hospital || 'Multi-Specialty Clinic'} {doctor.hospitalCount ? `+ ${doctor.hospitalCount} more` : ''}
+                          </p>
+                        </div>
+
+                        {/* Consultation Fee */}
                         {doctor.consultationFee && (
-                          <div className="text-right bg-teal-50 px-3 py-2 rounded-lg border border-teal-300">
-                            <p className="text-lg font-bold text-teal-600">₹{doctor.consultationFee}</p>
-                            <p className="text-xs text-gray-600 font-medium">fee</p>
+                          <div className="mb-3">
+                            <p className="text-sm text-gray-700">
+                              ₹{doctor.consultationFee} Consultation fee at clinic
+                              <span className="ml-1 inline-flex items-center justify-center w-4 h-4 text-xs text-gray-500 border border-gray-400 rounded-full cursor-help" title="Consultation fee information">
+                                i
+                              </span>
+                            </p>
                           </div>
                         )}
-                      </div>
 
-                      {/* Compact Rating */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="flex items-center bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
-                          <StarSolidIcon className="h-4 w-4 text-amber-500 mr-1" />
-                          <span className="text-sm font-bold text-gray-900">{doctor.rating || 4.5}</span>
+                        {/* Rating and Reviews */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="flex items-center bg-green-600 text-white px-2 py-1 rounded">
+                            <span className="text-sm font-bold mr-1">👍</span>
+                            <span className="text-sm font-bold">{Math.round((doctor.rating || 4.5) * 20)}%</span>
+                          </div>
+                          <button className="text-sm text-gray-700 hover:text-teal-600 font-medium underline">
+                            {doctor.reviewCount || 127} Patient Stories
+                          </button>
                         </div>
-                        <span className="text-xs text-gray-600">({doctor.reviewCount || 127} reviews)</span>
                       </div>
 
-                      {/* Compact Experience Info */}
-                      <div className="space-y-2 mb-3">
-                        <div className="flex items-center text-xs text-gray-700">
-                          <ClockIcon className="h-4 w-4 text-teal-600 mr-2" />
-                          <span className="font-semibold">{doctor.experience || '5+'} years exp</span>
+                      {/* Right: Availability and Actions */}
+                      <div className="flex-shrink-0 ml-4 flex flex-col items-end justify-between min-w-[200px]">
+                        {/* Availability */}
+                        <div className="mb-3">
+                          <div className="flex items-center text-sm mb-2">
+                            <CalendarIcon className="h-4 w-4 text-gray-500 mr-1" />
+                            <span className={`font-semibold ${doctor.available ? 'text-green-600' : 'text-gray-600'}`}>
+                              {doctor.available ? 'Available Tomorrow' : 'Available Today'}
+                            </span>
+                          </div>
                         </div>
-                        
-                        {doctor.location && (
-                          <div className="flex items-center text-xs text-gray-700">
-                            <MapPinIcon className="h-4 w-4 text-teal-600 mr-2" />
-                            <span className="font-medium">{doctor.location}</span>
-                          </div>
-                        )}
-                      </div>
 
-                      {/* Compact Consultation Types */}
-                      <div className="flex items-center gap-2 mb-3">
-                        {doctor.consultationTypes?.includes('video') && (
-                          <div className="bg-teal-100 text-teal-700 px-2 py-1 rounded-md text-xs font-bold flex items-center">
-                            <VideoCameraIcon className="h-3 w-3 mr-1" />
-                            Video
-                          </div>
-                        )}
-                        {doctor.consultationTypes?.includes('phone') && (
-                          <div className="bg-teal-100 text-teal-700 px-2 py-1 rounded-md text-xs font-bold flex items-center">
-                            <PhoneIcon className="h-3 w-3 mr-1" />
-                            Phone
-                          </div>
-                        )}
-                        {doctor.consultationTypes?.includes('clinic') && (
-                          <div className="bg-teal-100 text-teal-700 px-2 py-1 rounded-md text-xs font-bold flex items-center">
-                            <MapPinIcon className="h-3 w-3 mr-1" />
-                            Clinic
-                          </div>
-                        )}
+                        {/* Action Buttons */}
+                        <div className="w-full space-y-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDoctor(doctor);
+                              setStep(2);
+                            }}
+                            className="w-full px-4 py-3 bg-white text-teal-600 border-2 border-teal-600 rounded-lg hover:bg-teal-50 transition-all duration-300 font-bold text-sm"
+                          >
+                            Book Clinic Visit
+                            <div className="text-xs font-normal text-gray-600 mt-0.5">No Booking Fee</div>
+                          </button>
+                          
+                          {(doctor.consultationTypes?.includes('video') || doctor.consultationTypes?.includes('phone')) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Handle contact action
+                              }}
+                              className="w-full px-4 py-2.5 bg-white text-teal-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 font-semibold text-sm flex items-center justify-center gap-2"
+                            >
+                              <PhoneIcon className="h-4 w-4" />
+                              Contact Clinic
+                            </button>
+                          )}
+                        </div>
                       </div>
-
-                      {/* Compact Book Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedDoctor(doctor);
-                          setStep(2);
-                        }}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-300 shadow-md hover:shadow-lg font-bold text-sm flex items-center justify-center gap-2 group/button"
-                      >
-                        <CalendarIcon className="h-5 w-5" />
-                        Book Appointment
-                      </button>
                     </div>
+
+                    {/* Verification Badge (if applicable) */}
+                    {doctor.verified && (
+                      <div className="absolute top-2 left-2">
+                        <div className="bg-blue-600 text-white p-1 rounded-full">
+                          <CheckCircleIcon className="h-5 w-5" />
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                   ))
                 )}
