@@ -221,30 +221,6 @@ const AppointmentBooking = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Healthcare Professional Hero Section - Clean & Minimal */}
-      <div className="bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white relative overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 left-10 w-96 h-96 bg-teal-400 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            <h1 className="text-5xl md:text-6xl font-bold mb-4 text-white leading-tight">
-              Book Your Appointment
-            </h1>
-            <p className="text-xl md:text-2xl text-teal-100 max-w-3xl mx-auto leading-relaxed font-light">
-              Connect with qualified healthcare professionals instantly
-            </p>
-          </motion.div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <AnimatePresence mode="wait">
@@ -257,48 +233,48 @@ const AppointmentBooking = () => {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Healthcare Search Section - Improved Colors */}
-              <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-100 p-8 mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-6">Find Your Healthcare Provider</h2>
+              {/* Healthcare Search Section - Compact */}
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-3">Find Your Healthcare Provider</h2>
                 
-                {/* Search Bar - Teal Focus */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                {/* Search Bar - Compact Teal Theme */}
+                <div className="flex flex-col md:flex-row gap-3 mb-3">
                   <div className="flex-1 relative">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                      <MagnifyingGlassIcon className="h-6 w-6 text-teal-600" />
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                      <MagnifyingGlassIcon className="h-4 w-4 text-teal-600" />
                     </div>
                     <input
                       type="text"
                       placeholder="Search by doctor name, specialization, or medical condition..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all placeholder-gray-400 text-gray-900 font-medium"
+                      className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all placeholder-gray-400 text-gray-900 font-medium"
                     />
                   </div>
                   
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`
-                        flex items-center gap-2 px-6 py-4 rounded-xl font-bold transition-all duration-300
+                        flex items-center gap-1.5 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300
                         ${showFilters 
-                          ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg scale-105' 
-                          : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-teal-500 hover:bg-teal-50'
+                          ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md' 
+                          : 'bg-white border border-gray-300 text-gray-700 hover:border-teal-500 hover:bg-teal-50'
                         }
                       `}
                     >
-                      <FunnelIcon className="h-5 w-5" />
+                      <FunnelIcon className="h-4 w-4" />
                       Filters
                     </button>
                     
-                    <div className="relative min-w-[220px]">
-                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                        <AdjustmentsHorizontalIcon className="h-5 w-5 text-teal-600" />
+                    <div className="relative min-w-[180px]">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <AdjustmentsHorizontalIcon className="h-4 w-4 text-teal-600" />
                       </div>
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 pl-12 pr-10 py-4 rounded-xl font-semibold hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer"
+                        className="appearance-none w-full bg-white border border-gray-300 text-gray-700 pl-9 pr-8 py-2.5 rounded-lg text-sm font-semibold hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer"
                       >
                         {sortOptions.map(option => (
                           <option key={option.value} value={option.value} className="py-2">
@@ -306,8 +282,8 @@ const AppointmentBooking = () => {
                           </option>
                         ))}
                       </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                        <svg className="h-5 w-5 text-teal-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg className="h-4 w-4 text-teal-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </div>
@@ -323,21 +299,21 @@ const AppointmentBooking = () => {
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="border-t-2 border-gray-100 pt-6 mt-6"
+                      className="border-t border-gray-200 pt-3 mt-3"
                     >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {/* Specialization Filter */}
                         <div>
-                          <label className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-2">
-                              <AcademicCapIcon className="h-5 w-5 text-teal-600" />
+                          <label className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                            <div className="w-6 h-6 bg-teal-100 rounded-md flex items-center justify-center mr-1.5">
+                              <AcademicCapIcon className="h-3.5 w-3.5 text-teal-600" />
                             </div>
                             Specialization
                           </label>
                           <select
                             value={selectedSpecialization}
                             onChange={(e) => setSelectedSpecialization(e.target.value)}
-                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-semibold"
+                            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-3 py-2 pr-8 rounded-lg text-sm hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-medium"
                           >
                             {specializations.map(spec => (
                               <option key={spec} value={spec} className="py-2">
@@ -349,16 +325,16 @@ const AppointmentBooking = () => {
 
                         {/* Experience Filter */}
                         <div>
-                          <label className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-2">
-                              <ClockIcon className="h-5 w-5 text-teal-600" />
+                          <label className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                            <div className="w-6 h-6 bg-teal-100 rounded-md flex items-center justify-center mr-1.5">
+                              <ClockIcon className="h-3.5 w-3.5 text-teal-600" />
                             </div>
                             Experience
                           </label>
                           <select
                             value={experienceFilter}
                             onChange={(e) => setExperienceFilter(e.target.value)}
-                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-semibold"
+                            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-3 py-2 pr-8 rounded-lg text-sm hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-medium"
                           >
                             {experienceOptions.map(option => (
                               <option key={option.value} value={option.value} className="py-2">
@@ -370,16 +346,16 @@ const AppointmentBooking = () => {
 
                         {/* Rating Filter */}
                         <div>
-                          <label className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center mr-2">
-                              <StarIcon className="h-5 w-5 text-amber-500" />
+                          <label className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                            <div className="w-6 h-6 bg-amber-100 rounded-md flex items-center justify-center mr-1.5">
+                              <StarIcon className="h-3.5 w-3.5 text-amber-500" />
                             </div>
                             Rating
                           </label>
                           <select
                             value={ratingFilter}
                             onChange={(e) => setRatingFilter(e.target.value)}
-                            className="appearance-none w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 pr-10 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-semibold"
+                            className="appearance-none w-full bg-white border border-gray-300 text-gray-700 px-3 py-2 pr-8 rounded-lg text-sm hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all cursor-pointer font-medium"
                           >
                             {ratingOptions.map(option => (
                               <option key={option.value} value={option.value} className="py-2">
@@ -391,9 +367,9 @@ const AppointmentBooking = () => {
 
                         {/* Location Filter */}
                         <div>
-                          <label className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-                            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-2">
-                              <MapPinIcon className="h-5 w-5 text-red-600" />
+                          <label className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                            <div className="w-6 h-6 bg-red-100 rounded-md flex items-center justify-center mr-1.5">
+                              <MapPinIcon className="h-3.5 w-3.5 text-red-600" />
                             </div>
                             Location
                           </label>
@@ -402,14 +378,14 @@ const AppointmentBooking = () => {
                             placeholder="Enter city or area..."
                             value={locationFilter === 'all' ? '' : locationFilter}
                             onChange={(e) => setLocationFilter(e.target.value || 'all')}
-                            className="w-full bg-white border-2 border-gray-200 text-gray-700 px-4 py-3 rounded-xl hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all font-semibold placeholder-gray-400"
+                            className="w-full bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all font-medium placeholder-gray-400"
                           />
                         </div>
                       </div>
 
                       {/* Clear Filters */}
-                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-600">
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-600">
                           Showing {filteredDoctors.length} doctors
                         </p>
                         <button
@@ -421,7 +397,7 @@ const AppointmentBooking = () => {
                             setLocationFilter('all');
                             setSortBy('rating');
                           }}
-                          className="text-sm text-hb-primary hover:text-hb-primary-dark font-medium transition-colors"
+                          className="text-xs text-teal-600 hover:text-teal-700 font-semibold transition-colors"
                         >
                           Clear all filters
                         </button>

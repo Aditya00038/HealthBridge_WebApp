@@ -279,41 +279,48 @@ const LocatePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {/* Clean Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="mb-6"
         >
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Locate Healthcare
-            </span>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Locate Healthcare Facilities
           </h1>
-          <p className="text-lg text-gray-600">
-            Find nearby doctors, clinics, and hospitals with ratings and reviews
+          <p className="text-sm text-gray-600">
+            Find nearby doctors, clinics, and hospitals in your area
           </p>
         </motion.div>
 
-        {/* Search and Filter Bar */}
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+          </div>
+        ) : (
+          <>
+            {/* Search and Filter Bar - Compact Teal Theme */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl shadow-lg p-6 mb-8"
+          className="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-6"
         >
           {/* City Selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <GlobeAltIcon className="w-5 h-5 inline-block mr-2" />
+          <div className="mb-3">
+            <label className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+              <div className="w-6 h-6 bg-teal-100 rounded-md flex items-center justify-center mr-1.5">
+                <GlobeAltIcon className="w-3.5 h-3.5 text-teal-600" />
+              </div>
               Select City
             </label>
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white text-sm font-medium hover:border-teal-500 transition-all"
             >
               {availableCities.map(city => (
                 <option key={city.id} value={city.id}>
@@ -324,19 +331,19 @@ const LocatePage = () => {
           </div>
 
           {/* Search Input */}
-          <div className="relative mb-6">
-            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="relative mb-3">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-teal-600" />
             <input
               type="text"
               placeholder="Search by name, specialty, or services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+              className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder-gray-400 text-sm font-medium"
             />
           </div>
 
-          {/* Type Filter */}
-          <div className="flex flex-wrap gap-3">
+          {/* Type Filter - Compact Teal Theme */}
+          <div className="flex flex-wrap gap-2">
             {types.map((type) => {
               const IconComponent = type.icon;
               const isActive = selectedType === type.id;
@@ -344,15 +351,15 @@ const LocatePage = () => {
                 <button
                   key={type.id}
                   onClick={() => setSelectedType(type.id)}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                     isActive
-                      ? `bg-gradient-to-r ${getTypeColor(type.id)} text-white shadow-lg scale-105`
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:border-teal-500 hover:bg-teal-50'
                   }`}
                 >
-                  <IconComponent className="w-5 h-5" />
+                  <IconComponent className="w-4 h-4" />
                   <span>{type.name}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
                     isActive ? 'bg-white/20' : 'bg-gray-200'
                   }`}>
                     {facilities.filter(f => type.id === 'all' || f.type === type.id).length}
@@ -364,13 +371,13 @@ const LocatePage = () => {
         </motion.div>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600 text-lg">
-            Found <span className="font-semibold text-blue-600">{filteredFacilities.length}</span> healthcare facilities near you
+        <div className="mb-4">
+          <p className="text-gray-700 text-sm font-semibold">
+            Found <span className="text-teal-600">{filteredFacilities.length}</span> healthcare facilities
           </p>
         </div>
 
-        {/* Facilities Grid */}
+        {/* Facilities Grid - Compact Healthcare Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredFacilities.map((facility, index) => {
             const TypeIcon = getTypeIcon(facility.type);
@@ -380,97 +387,83 @@ const LocatePage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-lg hover:border-teal-400 transition-all duration-300 group cursor-pointer"
                 onClick={() => setSelectedLocation(facility)}
               >
-                {/* Image */}
-                <div className="relative h-48 overflow-hidden">
+                {/* Compact Image */}
+                <div className="relative h-40 overflow-hidden">
                   <img
                     src={facility.image}
                     alt={facility.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getTypeColor(facility.type)} text-white text-sm font-medium flex items-center gap-1 shadow-lg`}>
-                    <TypeIcon className="w-4 h-4" />
+                  <div className="absolute top-3 left-3 px-3 py-1 rounded-lg bg-teal-600 text-white text-xs font-bold flex items-center gap-1 shadow-md">
+                    <TypeIcon className="w-3 h-3" />
                     {facility.type.charAt(0).toUpperCase() + facility.type.slice(1)}
                   </div>
-                  <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-white text-gray-900 text-sm font-medium flex items-center gap-1 shadow-lg">
-                    <MapPinIcon className="w-4 h-4 text-blue-600" />
+                  <div className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-white text-gray-900 text-xs font-bold flex items-center gap-1 shadow-md">
+                    <MapPinIcon className="w-3 h-3 text-teal-600" />
                     {facility.distance}
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="p-6">
+                {/* Compact Content */}
+                <div className="p-4">
                   {/* Name and Specialty */}
-                  <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
                     {facility.name}
                   </h3>
-                  <p className="text-gray-600 mb-3">{facility.specialty}</p>
+                  <p className="text-sm text-gray-600 mb-3">{facility.specialty}</p>
 
-                  {/* Rating */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="flex items-center">
-                      {renderStars(facility.rating)}
+                  {/* Compact Rating */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                      <StarIconSolid className="w-4 h-4 text-amber-500 mr-1" />
+                      <span className="text-sm font-bold text-gray-900">{facility.rating}</span>
                     </div>
-                    <span className="text-lg font-semibold text-gray-900">{facility.rating}</span>
-                    <span className="text-gray-500 text-sm">({facility.reviews} reviews)</span>
+                    <span className="text-xs text-gray-600">({facility.reviews} reviews)</span>
                   </div>
 
-                  {/* Details */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-start gap-2 text-gray-600">
-                      <MapIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{facility.address}</span>
+                  {/* Compact Details */}
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <MapIcon className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                      <span className="text-xs truncate">{facility.address}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
-                      <PhoneIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm">{facility.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <ClockIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm">{facility.hours}</span>
+                      <ClockIcon className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                      <span className="text-xs">{facility.hours}</span>
                     </div>
                     {facility.doctors && (
                       <div className="flex items-center gap-2 text-gray-600">
-                        <UserGroupIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm">{facility.doctors} doctors</span>
-                      </div>
-                    )}
-                    {facility.experience && (
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <StarIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm">{facility.experience} experience</span>
+                        <UserGroupIcon className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <span className="text-xs font-semibold">{facility.doctors} doctors</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Services Tags */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {facility.services.slice(0, 3).map((service, idx) => (
+                  {/* Compact Services Tags */}
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {facility.services.slice(0, 2).map((service, idx) => (
                       <span
                         key={idx}
-                        className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full font-medium"
+                        className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-md font-semibold"
                       >
                         {service}
                       </span>
                     ))}
-                    {facility.services.length > 3 && (
-                      <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
-                        +{facility.services.length - 3} more
+                    {facility.services.length > 2 && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md font-semibold">
+                        +{facility.services.length - 2}
                       </span>
                     )}
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <button className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-300">
-                      Book Appointment
-                    </button>
-                    <button className="px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
-                      <MapIcon className="w-5 h-5" />
-                    </button>
-                  </div>
+                  {/* Compact Action Button */}
+                  <button className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 rounded-lg font-bold text-sm hover:from-teal-700 hover:to-cyan-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
+                    <MapIcon className="w-4 h-4" />
+                    View Details
+                  </button>
                 </div>
               </motion.div>
             );
@@ -488,6 +481,8 @@ const LocatePage = () => {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No facilities found</h3>
             <p className="text-gray-600">Try adjusting your search or filters</p>
           </motion.div>
+        )}
+          </>
         )}
       </div>
     </div>
