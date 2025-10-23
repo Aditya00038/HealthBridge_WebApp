@@ -138,7 +138,7 @@ const DoctorProfileSetup = () => {
     switch (stepNumber) {
       case 1:
         if (!profileData.displayName || !profileData.specialization || !profileData.licenseNumber) {
-          toast.error('Please fill in all basic information fields');
+          toast.error('Please fill in all required basic information fields');
           return false;
         }
         if (!profileData.profilePhotoURL || !profileData.bannerPhotoURL) {
@@ -147,9 +147,21 @@ const DoctorProfileSetup = () => {
         }
         return true;
       case 2:
-        return profileData.experience && profileData.education && profileData.bio;
+        if (!profileData.experience || !profileData.education || !profileData.bio) {
+          toast.error('Please fill in all professional details');
+          return false;
+        }
+        return true;
       case 3:
-        return profileData.consultationFee && profileData.videoConsultationFee && profileData.languages.length > 0;
+        if (!profileData.consultationFee || !profileData.videoConsultationFee) {
+          toast.error('Please enter consultation fees');
+          return false;
+        }
+        if (profileData.languages.length === 0) {
+          toast.error('Please select at least one language');
+          return false;
+        }
+        return true;
       default:
         return true;
     }
@@ -206,20 +218,35 @@ const DoctorProfileSetup = () => {
         {/* Progress Steps */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-4">
-            {[1, 2, 3, 4].map((stepNum) => (
-              <div key={stepNum} className="flex items-center">
-                <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
-                  ${step >= stepNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}
-                `}>
-                  {stepNum === 4 && step >= 4 ? (
-                    <CheckCircleIcon className="h-5 w-5" />
-                  ) : (
-                    stepNum
-                  )}
+            {[
+              { num: 1, label: 'Basic Info' },
+              { num: 2, label: 'Professional' },
+              { num: 3, label: 'Consultation' },
+              { num: 4, label: 'Review' }
+            ].map((stepItem, index) => (
+              <div key={stepItem.num} className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className={`
+                    w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
+                    ${step >= stepItem.num 
+                      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg' 
+                      : 'bg-gray-200 text-gray-600'
+                    }
+                  `}>
+                    {stepItem.num === 4 && step >= 4 ? (
+                      <CheckCircleIcon className="h-6 w-6" />
+                    ) : step > stepItem.num ? (
+                      <CheckCircleIcon className="h-6 w-6" />
+                    ) : (
+                      stepItem.num
+                    )}
+                  </div>
+                  <span className={`text-xs mt-2 font-medium ${step >= stepItem.num ? 'text-teal-600' : 'text-gray-500'}`}>
+                    {stepItem.label}
+                  </span>
                 </div>
-                {stepNum < 4 && (
-                  <div className={`w-16 h-1 mx-2 ${step > stepNum ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                {stepItem.num < 4 && (
+                  <div className={`w-16 h-1 mx-4 transition-all duration-300 ${step > stepItem.num ? 'bg-gradient-to-r from-teal-600 to-cyan-600' : 'bg-gray-200'}`} />
                 )}
               </div>
             ))}
@@ -247,7 +274,7 @@ const DoctorProfileSetup = () => {
                       type="text"
                       value={profileData.displayName}
                       onChange={(e) => handleInputChange('displayName', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all"
                       placeholder="Dr. John Smith"
                     />
                   </div>
@@ -260,7 +287,7 @@ const DoctorProfileSetup = () => {
                   <select
                     value={profileData.specialization}
                     onChange={(e) => handleInputChange('specialization', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all"
                   >
                     <option value="">Select Specialization</option>
                     {specializations.map(spec => (
@@ -602,9 +629,9 @@ const DoctorProfileSetup = () => {
             {step > 1 && (
               <button
                 onClick={() => setStep(prev => prev - 1)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-all duration-300"
               >
-                Back
+                ← Back
               </button>
             )}
             
@@ -613,25 +640,25 @@ const DoctorProfileSetup = () => {
                 <button
                   onClick={handleNext}
                   disabled={!validateStep(step)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  className="px-8 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg hover:from-teal-700 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed font-bold shadow-md hover:shadow-lg transition-all duration-300"
                 >
-                  Next
+                  Continue →
                 </button>
               ) : (
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  className="px-10 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed font-bold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
                 >
                   {loading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                      Submitting...
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                      Creating Profile...
                     </>
                   ) : (
                     <>
-                      <CheckCircleIcon className="h-4 w-4" />
-                      Submit for Review
+                      <CheckCircleIcon className="h-5 w-5" />
+                      Complete Profile Setup
                     </>
                   )}
                 </button>
