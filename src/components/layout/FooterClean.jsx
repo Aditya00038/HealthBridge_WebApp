@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { HeartIcon } from '@heroicons/react/24/outline';
 
 const FooterClean = () => {
   const navigation = {
@@ -27,29 +26,32 @@ const FooterClean = () => {
   };
 
   return (
-    <footer className="bg-white border-t border-slate-100">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-8">
+    <footer className="bg-white border-t border-slate-200 dark:bg-slate-950 dark:border-slate-800 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <HeartIcon className="w-5 h-5 text-white" />
+            <Link to="/" className="inline-block mb-4">
+              <div className="bg-white dark:bg-slate-800 rounded-lg px-3 py-2 shadow-sm">
+                <img 
+                  src="/company-logo.png" 
+                  alt="CareConnect" 
+                  className="h-8 w-auto"
+                />
               </div>
-              <span className="text-lg font-semibold text-slate-900">CareConnect</span>
             </Link>
-            <p className="text-sm text-slate-600">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
               Modern healthcare for everyone, everywhere.
             </p>
           </div>
 
           {/* Product */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Product</h3>
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white mb-3">Product</h3>
             <ul className="space-y-2">
               {navigation.product.map((item) => (
                 <li key={item.name}>
-                  <Link to={item.href} className="text-sm text-slate-600 hover:text-slate-900">
+                  <Link to={item.href} className="text-xs sm:text-sm text-slate-600 hover:text-teal-600 dark:text-slate-400 dark:hover:text-teal-400 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -59,11 +61,11 @@ const FooterClean = () => {
 
           {/* Company */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Company</h3>
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white mb-3">Company</h3>
             <ul className="space-y-2">
               {navigation.company.map((item) => (
                 <li key={item.name}>
-                  <Link to={item.href} className="text-sm text-slate-600 hover:text-slate-900">
+                  <Link to={item.href} className="text-xs sm:text-sm text-slate-600 hover:text-teal-600 dark:text-slate-400 dark:hover:text-teal-400 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -73,11 +75,11 @@ const FooterClean = () => {
 
           {/* Support */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Support</h3>
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white mb-3">Support</h3>
             <ul className="space-y-2">
               {navigation.support.map((item) => (
                 <li key={item.name}>
-                  <Link to={item.href} className="text-sm text-slate-600 hover:text-slate-900">
+                  <Link to={item.href} className="text-xs sm:text-sm text-slate-600 hover:text-teal-600 dark:text-slate-400 dark:hover:text-teal-400 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -87,11 +89,11 @@ const FooterClean = () => {
 
           {/* Legal */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">Legal</h3>
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white mb-3">Legal</h3>
             <ul className="space-y-2">
               {navigation.legal.map((item) => (
                 <li key={item.name}>
-                  <Link to={item.href} className="text-sm text-slate-600 hover:text-slate-900">
+                  <Link to={item.href} className="text-xs sm:text-sm text-slate-600 hover:text-teal-600 dark:text-slate-400 dark:hover:text-teal-400 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -101,10 +103,15 @@ const FooterClean = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-slate-100">
-          <p className="text-sm text-slate-600 text-center">
-            © {new Date().getFullYear()} CareConnect. All rights reserved.
-          </p>
+        <div className="pt-6 sm:pt-8 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 text-center sm:text-left">
+              © {new Date().getFullYear()} HealthBridge. All rights reserved.
+            </p>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 text-center sm:text-right">
+              Made with <span className="text-red-500">❤️</span> for better healthcare
+            </p>
+          </div>
         </div>
       </div>
     </footer>

@@ -11,7 +11,13 @@ import {
   BuildingOfficeIcon,
   UserGroupIcon,
   HeartIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  ShieldCheckIcon,
+  LifebuoyIcon,
+  SparklesIcon,
+  CurrencyRupeeIcon,
+  DevicePhoneMobileIcon,
+  HomeModernIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { 
@@ -280,6 +286,21 @@ const LocatePage = () => {
     }
   };
 
+  const formatLabel = (label) => {
+    if (!label) return '';
+    return label
+      .toString()
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^\w/, (char) => char.toUpperCase());
+  };
+
+  const getActiveSupportServices = (facility) => {
+    if (!facility?.supportServices) return [];
+    return Object.entries(facility.supportServices)
+      .filter(([, value]) => Boolean(value))
+      .map(([key]) => formatLabel(key));
+  };
+
   const handleViewDetails = (facility) => {
     setSelectedFacilityDetails(facility);
     setShowDetailsModal(true);
@@ -289,6 +310,8 @@ const LocatePage = () => {
     setShowDetailsModal(false);
     setSelectedFacilityDetails(null);
   };
+
+  const activeSupportServices = selectedFacilityDetails ? getActiveSupportServices(selectedFacilityDetails) : [];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -450,6 +473,27 @@ const LocatePage = () => {
                       <div className="flex items-center gap-2 text-gray-600">
                         <UserGroupIcon className="w-4 h-4 text-teal-600 flex-shrink-0" />
                         <span className="text-xs font-semibold">{facility.doctors} doctors</span>
+                      </div>
+                    )}
+                    {facility.emergencySupport?.availability && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <ShieldCheckIcon className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                        <span className="text-xs">{facility.emergencySupport.availability}</span>
+                      </div>
+                    )}
+                    {facility.waitingTime?.opd && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <ClockIcon className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                        <span className="text-xs">OPD wait {facility.waitingTime.opd}</span>
+                      </div>
+                    )}
+                    {facility.languages && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <GlobeAltIcon className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                        <span className="text-xs">
+                          {facility.languages.slice(0, 2).join(', ')}
+                          {facility.languages.length > 2 ? ` +${facility.languages.length - 2} more` : ''}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -639,6 +683,72 @@ const LocatePage = () => {
                   </div>
                 </div>
 
+                {/* Emergency & Critical Care */}
+                {selectedFacilityDetails.emergencySupport && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <ShieldCheckIcon className="w-6 h-6 text-rose-500" />
+                      Emergency &amp; Critical Care
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl">
+                        <div className="flex items-center gap-3 mb-3">
+                          <LifebuoyIcon className="w-6 h-6 text-rose-600" />
+                          <div>
+                            <p className="text-xs font-semibold text-rose-600 uppercase">Emergency Hotline</p>
+                            <p className="text-base font-bold text-gray-900">{selectedFacilityDetails.emergencySupport.hotline}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 leading-relaxed">{selectedFacilityDetails.emergencySupport.notes}</p>
+                      </div>
+                      <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                        <div className="flex items-center gap-3 mb-3">
+                          <ShieldCheckIcon className="w-6 h-6 text-teal-600" />
+                          <div>
+                            <p className="text-xs font-semibold text-teal-600 uppercase">Availability</p>
+                            <p className="text-base font-bold text-gray-900">{selectedFacilityDetails.emergencySupport.availability}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <div className="flex items-center gap-2">
+                            <PhoneIcon className="w-4 h-4 text-teal-600" />
+                            <span>Ambulance Desk: {selectedFacilityDetails.emergencySupport.ambulance}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <HeartIcon className="w-4 h-4 text-rose-500" />
+                            <span>{selectedFacilityDetails.emergencySupport.traumaLevel}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bed Availability */}
+                {selectedFacilityDetails.bedAvailability && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <HomeModernIcon className="w-6 h-6 text-indigo-500" />
+                      Bed Availability Snapshot
+                    </h3>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-center">
+                        <p className="text-xs font-semibold text-indigo-600 uppercase">Total Beds</p>
+                        <p className="text-2xl font-bold text-gray-900">{selectedFacilityDetails.bedAvailability.total}</p>
+                      </div>
+                      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-center">
+                        <p className="text-xs font-semibold text-indigo-600 uppercase">ICU Beds</p>
+                        <p className="text-2xl font-bold text-gray-900">{selectedFacilityDetails.bedAvailability.icu}</p>
+                      </div>
+                      <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl text-center">
+                        <p className="text-xs font-semibold text-indigo-600 uppercase">Ventilators</p>
+                        <p className="text-2xl font-bold text-gray-900">{selectedFacilityDetails.bedAvailability.ventilators}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-3">{selectedFacilityDetails.bedAvailability.lastUpdated}</p>
+                  </div>
+                )}
+
                 {/* Services */}
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Available Services</h3>
@@ -653,6 +763,145 @@ const LocatePage = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Insurance & Payment */}
+                {(selectedFacilityDetails.acceptedInsurance || selectedFacilityDetails.paymentOptions) && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <CurrencyRupeeIcon className="w-6 h-6 text-emerald-600" />
+                      Insurance &amp; Payment
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {selectedFacilityDetails.acceptedInsurance && (
+                        <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Insurance Partners</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedFacilityDetails.acceptedInsurance.map((plan) => (
+                              <span key={plan} className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
+                                {plan}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {selectedFacilityDetails.paymentOptions && (
+                        <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Payment Options</h4>
+                          <ul className="space-y-2 text-sm text-gray-700">
+                            {selectedFacilityDetails.paymentOptions.map((option) => (
+                              <li key={option} className="flex items-center gap-2">
+                                <CurrencyRupeeIcon className="w-4 h-4 text-emerald-600" />
+                                {option}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Amenities & Patient Support */}
+                {(selectedFacilityDetails.amenities || selectedFacilityDetails.specialPrograms || activeSupportServices.length > 0 || selectedFacilityDetails.languages || selectedFacilityDetails.patientExperience) && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <SparklesIcon className="w-6 h-6 text-indigo-500" />
+                      Patient Amenities &amp; Support
+                    </h3>
+                    {selectedFacilityDetails.amenities && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">On-site Amenities</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedFacilityDetails.amenities.map((amenity) => (
+                            <span key={amenity} className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-100">
+                              {amenity}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedFacilityDetails.specialPrograms && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Special Programs</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedFacilityDetails.specialPrograms.map((program) => (
+                            <span key={program} className="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full border border-purple-100">
+                              {program}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {activeSupportServices.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Support Services</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {activeSupportServices.map((service) => (
+                            <span key={service} className="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-semibold rounded-full border border-teal-100">
+                              {service}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedFacilityDetails.languages && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Languages Supported</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedFacilityDetails.languages.map((language) => (
+                            <span key={language} className="px-3 py-1 bg-cyan-50 text-cyan-700 text-xs font-semibold rounded-full border border-cyan-100">
+                              {language}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedFacilityDetails.patientExperience && (
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {Object.entries(selectedFacilityDetails.patientExperience).map(([key, value]) => (
+                          <div key={key} className="p-4 bg-white border border-gray-200 rounded-xl">
+                            <p className="text-xs font-semibold text-gray-500 uppercase">{formatLabel(key)}</p>
+                            <p className="text-sm font-medium text-gray-800 mt-1">{typeof value === 'boolean' ? (value ? 'Available' : 'Not available') : value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Telehealth & Remote Care */}
+                {selectedFacilityDetails.telehealth && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <DevicePhoneMobileIcon className="w-6 h-6 text-teal-600" />
+                      Telehealth &amp; Remote Care
+                    </h3>
+                    <div className="p-4 bg-teal-50 border border-teal-100 rounded-xl">
+                      <p className="text-sm text-gray-700 mb-2">{selectedFacilityDetails.telehealth.description}</p>
+                      <p className="text-sm font-semibold text-gray-800 mb-2">
+                        Status: <span className="text-teal-700">{selectedFacilityDetails.telehealth.available ? 'Available' : 'Limited availability'}</span>
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedFacilityDetails.telehealth.bookingUrl && (
+                          <a
+                            href={selectedFacilityDetails.telehealth.bookingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-sm font-semibold rounded-lg hover:from-teal-700 hover:to-cyan-700"
+                          >
+                            Book a Teleconsult
+                          </a>
+                        )}
+                        <a
+                          href={`tel:${selectedFacilityDetails.phone}`}
+                          className="px-4 py-2 bg-white border border-teal-200 text-teal-700 text-sm font-semibold rounded-lg hover:bg-teal-100"
+                        >
+                          Call to Schedule
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">

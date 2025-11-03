@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const PatientProfile = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -73,9 +73,10 @@ const PatientProfile = () => {
   const handleSaveProfile = async () => {
     try {
       setLoading(true);
-      // TODO: Implement Firebase update
-      console.log('Saving profile:', profileData);
-      setEditing(false);
+      const result = await updateProfile(profileData);
+      if (result?.success) {
+        setEditing(false);
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
     } finally {

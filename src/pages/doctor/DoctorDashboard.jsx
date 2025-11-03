@@ -1,367 +1,281 @@
-import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { appointmentServices } from '../../services/firebaseServices';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import AppointmentRequests from '../../components/AppointmentRequests';
 import {
-  CalendarIcon,
-  UsersIcon,
+  CalendarDaysIcon,
+  VideoCameraIcon,
   ClockIcon,
   CheckCircleIcon,
-  PlusIcon,
-  VideoCameraIcon,
-  BellIcon,
-  DocumentTextIcon,
   ExclamationTriangleIcon,
-  StarIcon,
   UserIcon,
-  EyeIcon,
-  ArrowTrendingUpIcon,
-  HeartIcon
+  MapPinIcon,
+  DocumentTextIcon,
+  ChatBubbleLeftRightIcon,
+  PlusIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
+// --- Appointment Management Dashboard State & Handlers ---
 
-const DoctorDashboard = () => {
-  const { user, userProfile } = useAuth();
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalAppointments: 0,
-    todayAppointments: 0,
-    pendingAppointments: 0,
-    completedAppointments: 0
-  });
+import React, { useState, useEffect } from 'react';
+import { appointmentServices } from '../../services/firebaseServices';
+import { useAuth } from '../../contexts/AuthContext';
 
-  useEffect(() => {
-    if (user) {
-      fetchAppointments();
-    }
-  }, [user]);
-
-  const fetchAppointments = async () => {
-    try {
-      setLoading(true);
-      const appointmentData = await appointmentServices.getUserAppointments(user.uid, 'doctor');
-      setAppointments(appointmentData);
-      
-      // Calculate stats
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      const stats = {
-        totalAppointments: appointmentData.length,
-        todayAppointments: appointmentData.filter(apt => {
-          const aptDate = new Date(apt.appointmentDate);
-          return aptDate.toDateString() === today.toDateString();
-        }).length,
-        pendingAppointments: appointmentData.filter(apt => apt.status === 'pending').length,
-        completedAppointments: appointmentData.filter(apt => apt.status === 'completed').length
-      };
-      
-      setStats(stats);
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const badges = {
-      pending: 'bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold',
-      confirmed: 'bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold',
-      completed: 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold',
-      cancelled: 'bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold',
-      rejected: 'bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold'
-    };
-    return badges[status] || 'bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold';
-  };
-
+  const DoctorDashboard = () => {
+  // Doctor quick actions
   const quickActions = [
     {
-      name: 'Appointment Management',
-      description: 'Review and manage patient appointments',
-      icon: CalendarIcon,
-      href: '/doctor/appointments',
-      color: 'bg-gradient-to-r from-orange-500 to-orange-600',
+      name: 'My Schedule',
+      description: 'Check your upcoming schedule',
+      icon: ClockIcon,
+      href: '/doctor/schedule',
+      color: 'bg-gradient-to-r from-violet-500 to-purple-600',
     },
     {
-      name: 'View Schedule',
-      description: 'Check your appointment schedule',
-      icon: CalendarIcon,
-      href: '/doctor/schedule',
+      name: 'Manage Appointments',
+      description: 'View and manage all patient appointments',
+      icon: CalendarDaysIcon,
+      href: '/doctor/appointments',
       color: 'bg-gradient-to-r from-blue-500 to-blue-600',
     },
     {
+      name: 'Video Consults',
+      description: 'Start or join video consultations',
+      icon: VideoCameraIcon,
+      href: '/video-call',
+      color: 'bg-gradient-to-r from-cyan-500 to-blue-500',
+    },
+    {
       name: 'Patient Records',
-      description: 'Access patient medical records and create prescriptions',
+      description: 'Access and update patient medical records',
       icon: DocumentTextIcon,
       href: '/doctor/patient-records',
       color: 'bg-gradient-to-r from-green-500 to-green-600',
     },
     {
-      name: 'Video Consultations',
-      description: 'Start or join video calls',
-      icon: VideoCameraIcon,
-      href: '/video-call',
-      color: 'bg-gradient-to-r from-purple-500 to-purple-600',
-    },
-    {
-      name: 'Profile Settings',
+      name: 'My Profile',
       description: 'Manage your profile and preferences',
       icon: UserIcon,
       href: '/profile/settings',
       color: 'bg-gradient-to-r from-indigo-500 to-indigo-600',
     }
   ];
+    const { user } = useAuth();
+    const [appointments, setAppointments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [search, setSearch] = useState('');
+    const [selected, setSelected] = useState(null);
+    const [showModal, setShowModal] = useState(false);
 
-  const statCards = [
-    {
-      name: 'Total Appointments',
-      value: stats.totalAppointments,
-      icon: CalendarIcon,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
-    },
-    {
-      name: 'Today\'s Appointments',
-      value: stats.todayAppointments,
-      icon: ClockIcon,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
-    },
-    {
-      name: 'Pending Requests',
-      value: stats.pendingAppointments,
-      icon: ExclamationTriangleIcon,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
-      borderColor: 'border-yellow-200'
-    },
-    {
-      name: 'Completed',
-      value: stats.completedAppointments,
-      icon: CheckCircleIcon,
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-50',
-      borderColor: 'border-teal-200'
-    }
-  ];
+    useEffect(() => {
+      if (user) fetchAppointments();
+      // eslint-disable-next-line
+    }, [user]);
 
-  if (loading) {
+    const fetchAppointments = async () => {
+      setLoading(true);
+      try {
+        const data = await appointmentServices.getUserAppointments(user.uid, 'doctor');
+        setAppointments(data);
+      } catch (e) {
+        setAppointments([]);
+      }
+      setLoading(false);
+    };
+
+    const filtered = appointments.filter(a => {
+      const statusMatch = statusFilter === 'all' || a.status === statusFilter;
+      const typeMatch = typeFilter === 'all' || (a.appointmentType || a.type) === typeFilter;
+      const searchMatch =
+        search.trim() === '' ||
+        (a.patientName && a.patientName.toLowerCase().includes(search.toLowerCase())) ||
+        (a.patientEmail && a.patientEmail.toLowerCase().includes(search.toLowerCase()));
+      return statusMatch && typeMatch && searchMatch;
+    });
+
+    const stats = {
+      total: appointments.length,
+      today: appointments.filter(a => {
+        const d = new Date(a.appointmentDate?.seconds ? a.appointmentDate.seconds * 1000 : a.appointmentDate);
+        const t = new Date();
+        return d.toDateString() === t.toDateString();
+      }).length,
+      pending: appointments.filter(a => a.status === 'pending').length,
+      completed: appointments.filter(a => a.status === 'completed').length,
+    };
+
+    const formatDate = d => {
+      if (!d) return '';
+      const date = typeof d === 'object' && d.seconds ? new Date(d.seconds * 1000) : new Date(d);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const handleAction = async (id, action) => {
+      if (!id) return;
+      if (action === 'confirm') await appointmentServices.approveAppointment(id, user.uid);
+      if (action === 'complete') await appointmentServices.updateAppointmentStatus(id, 'completed', { actorId: user.uid });
+      if (action === 'cancel') await appointmentServices.updateAppointmentStatus(id, 'cancelled', { actorId: user.uid });
+      fetchAppointments();
+    };
+
+    // Compute urgency based on reason/symptoms keywords. Higher number = higher urgency.
+    const computeUrgency = (apt) => {
+      if (!apt) return 0;
+      const text = `${apt.reason || ''} ${apt.reasonForVisit || ''} ${apt.diagnosis || ''}`.toLowerCase();
+      const high = ['chest pain','shortness of breath','breathless','unconscious','stroke','paralysis','severe bleeding','heavy bleeding','severe pain','collapse'];
+      const med = ['fever','high fever','infection','severe','dizziness','vomit','vomiting','dehydration','loss of consciousness','urgent'];
+      for (const k of high) if (text.includes(k)) return 5;
+      for (const k of med) if (text.includes(k)) return 3;
+      return 1;
+    };
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome, Dr. {userProfile?.name || user?.displayName || 'Doctor'}! 👩‍⚕️
-              </h1>
-              <p className="text-gray-600">
-                Today: {new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-            </div>
-            
-            <div className="mt-4 sm:mt-0">
-              <Link
-                to="/doctor/profile-setup"
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-teal-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-shadow"
-              >
-                <PlusIcon className="w-5 h-5 mr-2" />
-                Update Profile
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat) => (
-            <div
-              key={stat.name}
-              className={`bg-white rounded-xl shadow-md p-6 border-2 ${stat.borderColor} hover:shadow-lg transition-shadow`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className={`text-3xl font-bold ${stat.color} mt-2`}>{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                  <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
-                <ArrowTrendingUpIcon className="w-6 h-6 text-gray-400" />
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6 text-blue-900">Doctor Dashboard</h1>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+            {/* Quick Actions Left */}
+            <div className="lg:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {quickActions.map((action) => (
                   <Link
                     key={action.name}
                     to={action.href}
-                    className="block p-6 rounded-xl border-2 border-transparent bg-white hover:border-gray-200 shadow-sm hover:shadow-md transition-all"
+                    className="block p-6 rounded-xl border-2 border-transparent bg-white hover:border-blue-300 shadow-sm hover:shadow-lg transition-all group"
                   >
-                    <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4`}>
+                    <div className={`w-12 h-12 rounded-lg ${action.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                       <action.icon className="w-6 h-6 text-white" />
                     </div>
-                    
-                    <h3 className="font-semibold text-gray-900 mb-2">{action.name}</h3>
-                    <p className="text-sm text-gray-600 mb-4">{action.description}</p>
-                    
-                    <div className="flex items-center text-sm font-medium text-blue-600">
-                      Access Now
+                    <h3 className="font-semibold text-gray-900 mb-1">{action.name}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{action.description}</p>
+                    <div className="flex items-center text-sm font-medium text-blue-600 group-hover:underline">
+                      Go
                       <EyeIcon className="w-4 h-4 ml-1" />
                     </div>
                   </Link>
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Today's Appointments */}
-          <div>
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Today's Schedule</h2>
-                <Link
-                  to="/doctor/appointments"
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center"
-                >
-                  View All
-                  <EyeIcon className="w-4 h-4 ml-1" />
-                </Link>
+            {/* Graphs/Business Visuals Right */}
+            <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-stretch">
+              <h2 className="text-lg font-bold text-blue-800 mb-4">Business Overview</h2>
+              <div className="w-full h-56">
+                <BusinessChart appointments={appointments} />
               </div>
-
-              <div className="space-y-4">
-                {appointments
-                  .filter(apt => {
-                    const today = new Date();
-                    const aptDate = new Date(apt.appointmentDate);
-                    return aptDate.toDateString() === today.toDateString();
-                  })
-                  .slice(0, 3)
-                  .map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:bg-white hover:shadow-md transition-all"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{appointment.patientName}</h4>
-                          <p className="text-sm text-gray-600">{appointment.patientEmail}</p>
-                        </div>
-                        <span className={getStatusBadge(appointment.status)}>
-                          {appointment.status}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center text-sm text-gray-600 space-x-4">
-                        <span className="flex items-center">
-                          <ClockIcon className="w-4 h-4 mr-1" />
-                          {appointment.appointmentTime}
-                        </span>
-                        {appointment.appointmentType === 'video' && (
-                          <span className="flex items-center text-green-600">
-                            <VideoCameraIcon className="w-4 h-4 mr-1" />
-                            Video
-                          </span>
-                        )}
-                      </div>
-                      
-                      {appointment.reasonForVisit && (
-                        <div className="mt-3 text-sm text-gray-700">
-                          <strong>Reason:</strong> {appointment.reasonForVisit}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                {appointments.filter(apt => {
-                  const today = new Date();
-                  const aptDate = new Date(apt.appointmentDate);
-                  return aptDate.toDateString() === today.toDateString();
-                }).length === 0 && (
-                  <div className="text-center py-8">
-                    <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-2">No appointments today</p>
-                    <p className="text-sm text-gray-500">Check your schedule for upcoming appointments</p>
-                  </div>
-                )}
-              </div>
+              <div className="mt-4 text-xs text-gray-500">Showing appointments over the last 7 days.</div>
             </div>
           </div>
-        </div>
-
-        {/* Appointment Requests Section */}
-        <div className="mt-8">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                <BellIcon className="w-6 h-6 mr-2 text-orange-500" />
-                Appointment Requests
-              </h2>
-              {stats.pendingAppointments > 0 && (
-                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
-                  {stats.pendingAppointments} pending
-                </span>
-              )}
-            </div>
-            <AppointmentRequests 
-              onAppointmentUpdate={fetchAppointments}
-              doctorId={user?.uid}
-            />
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard label="Total" value={stats.total} />
+            <StatCard label="Today" value={stats.today} />
+            <StatCard label="Pending" value={stats.pending} />
+            <StatCard label="Completed" value={stats.completed} />
           </div>
-        </div>
-
-        {/* Professional Tips Section */}
-        <div className="mt-8">
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-md p-6 border-2 border-indigo-100">
-            <div className="flex items-start space-x-4">
-              <div className="p-3 bg-white rounded-full shadow-md">
-                <HeartIcon className="w-8 h-8 text-indigo-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Professional Tip</h3>
-                <p className="text-gray-700 mb-4">
-                  Regular patient follow-ups improve treatment outcomes by 40%. Consider scheduling 
-                  follow-up appointments for patients with chronic conditions or complex treatments.
-                </p>
-                <div className="flex items-center text-sm text-indigo-700">
-                  <StarIcon className="w-4 h-4 mr-1" />
-                  Best practices from medical research
-                </div>
+          {/* Table removed: only quick actions, stats, and chart remain */}
+          {showModal && selected && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative animate-fadeIn">
+                <button className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl font-bold" onClick={() => setShowModal(false)} aria-label="Close">×</button>
+                <h3 className="text-xl font-bold mb-4 text-blue-900 flex items-center gap-2">
+                  <UserIcon className="w-6 h-6 text-blue-400" /> Appointment Details
+                </h3>
+                <div className="mb-2 text-sm text-gray-700 flex items-center gap-2"><strong>Patient:</strong> <span>{selected.patientName}</span></div>
+                <div className="mb-2 text-sm text-gray-700 flex items-center gap-2"><strong>Email:</strong> <span>{selected.patientEmail}</span></div>
+                <div className="mb-2 text-sm text-gray-700 flex items-center gap-2"><strong>Date:</strong> <span>{formatDate(selected.appointmentDate)}</span></div>
+                <div className="mb-2 text-sm text-gray-700 flex items-center gap-2"><strong>Time:</strong> <span>{selected.appointmentTime || selected.time || selected.selectedTime}</span></div>
+                <div className="mb-2 text-sm text-gray-700 flex items-center gap-2"><strong>Type:</strong> <span className="capitalize">{selected.appointmentType || selected.type}</span></div>
+                <div className="mb-2 text-sm text-gray-700 flex items-center gap-2"><strong>Status:</strong> <span className="capitalize">{selected.status}</span></div>
+                <div className="mb-2 text-sm text-gray-700 flex items-center gap-2"><strong>Urgency:</strong> <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-white ${computeUrgency(selected) >= 5 ? 'bg-red-500' : computeUrgency(selected) >= 3 ? 'bg-yellow-400' : 'bg-green-400'}`}>{computeUrgency(selected) >= 5 ? 'High' : computeUrgency(selected) >= 3 ? 'Medium' : 'Low'}</span></div>
+                {selected.reasonForVisit && (<div className="mb-2 text-sm text-gray-700"><strong>Reason:</strong> {selected.reasonForVisit}</div>)}
+                {selected.reason && (<div className="mb-2 text-sm text-gray-700"><strong>Reason:</strong> {selected.reason}</div>)}
+                {selected.specialization && (<div className="mb-2 text-sm text-gray-700"><strong>Specialization:</strong> {selected.specialization}</div>)}
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
+
+  function StatCard({ label, value }) {
+    return (
+      <div className="bg-white rounded-xl shadow p-4 text-center">
+        <div className="text-2xl font-bold text-blue-700">{value}</div>
+        <div className="text-xs text-gray-500 mt-1">{label}</div>
+      </div>
+    );
+  }
+
+  // Small inline business chart (7-day bar + sparkline)
+  function BusinessChart({ appointments = [] }) {
+    // build last 7 days labels
+    const days = [];
+    const counts = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      d.setHours(0,0,0,0);
+      days.push(d);
+      counts.push(0);
+    }
+
+    appointments.forEach(a => {
+      const ts = a.appointmentDate?.seconds ? new Date(a.appointmentDate.seconds * 1000) : new Date(a.appointmentDate);
+      if (!ts || isNaN(ts)) return;
+      const dayStart = new Date(ts); dayStart.setHours(0,0,0,0);
+      for (let i = 0; i < days.length; i++) {
+        if (days[i].toDateString() === dayStart.toDateString()) {
+          counts[i] += 1;
+          break;
+        }
+      }
+    });
+
+    const max = Math.max(...counts, 1);
+    const width = 300;
+    const height = 120;
+    const padding = 8;
+    const barWidth = (width - padding * 2) / counts.length - 6;
+
+    // sparkline path
+    const points = counts.map((c, i) => {
+      const x = padding + i * ((width - padding*2) / (counts.length-1 || 1));
+      const y = padding + (1 - c / max) * (height - padding*2);
+      return `${x},${y}`;
+    });
+    const sparkPath = points.map((p, i) => (i===0?`M ${p}`:`L ${p}`)).join(' ');
+
+    return (
+      <div className="w-full h-full flex flex-col">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+          {/* bars */}
+          {counts.map((c,i) => {
+            const x = padding + i * ((width - padding*2) / counts.length) + 3;
+            const bh = (c / max) * (height - padding*2);
+            const y = height - padding - bh;
+            return (
+              <rect key={i} x={x} y={y} width={barWidth} height={bh} rx="3" fill="#60a5fa" opacity="0.9" />
+            );
+          })}
+
+          {/* sparkline */}
+          <path d={sparkPath} fill="none" stroke="#1e3a8a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+          {days.map((d,i) => (
+            <div key={i} className="text-center" style={{width: `${100/counts.length}%`}}>
+              <div>{d.toLocaleDateString(undefined,{weekday:'short'})}</div>
+              <div className="font-semibold">{counts[i]}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+
 
 export default DoctorDashboard;

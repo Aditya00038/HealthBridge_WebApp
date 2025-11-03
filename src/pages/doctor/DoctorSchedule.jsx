@@ -7,7 +7,9 @@ import {
   CalendarIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { scheduleServices } from '../../services/firebaseServices';
+import toast from 'react-hot-toast';
 
 const DoctorSchedule = () => {
   const { user, userProfile } = useAuth();
@@ -27,34 +29,19 @@ const DoctorSchedule = () => {
 
   // Load existing schedules
   useEffect(() => {
-    loadSchedules();
-  }, []);
+    if (user) {
+      loadSchedules();
+    }
+  }, [user]);
 
   const loadSchedules = async () => {
     setLoading(true);
     try {
-      // TODO: Fetch from Firebase
-      // For now, using sample data
-      setSchedules([
-        {
-          id: 1,
-          day: 'Monday',
-          startTime: '09:00',
-          endTime: '17:00',
-          slotDuration: 30,
-          isAvailable: true
-        },
-        {
-          id: 2,
-          day: 'Tuesday',
-          startTime: '09:00',
-          endTime: '17:00',
-          slotDuration: 30,
-          isAvailable: true
-        }
-      ]);
+      const doctorSchedules = await scheduleServices.getDoctorSchedules(user.uid);
+      setSchedules(doctorSchedules);
     } catch (error) {
       console.error('Error loading schedules:', error);
+      toast.error('Failed to load schedules');
     } finally {
       setLoading(false);
     }
@@ -62,12 +49,15 @@ const DoctorSchedule = () => {
 
   const handleAddSchedule = async () => {
     try {
-      // TODO: Save to Firebase
-      const newSched = {
-        ...newSchedule,
-        id: Date.now()
-      };
-      setSchedules([...schedules, newSched]);
+      // Check if schedule for this day already exists
+      const existingDay = schedules.find(s => s.day === newSchedule.day);
+      if (existingDay) {
+        toast.error(`Schedule for ${newSchedule.day} already exists!`);
+        return;
+      }
+
+      const savedSchedule = await scheduleServices.saveDoctorSchedule(user.uid, newSchedule);
+      setSchedules([...schedules, savedSchedule]);
       setShowAddModal(false);
       setNewSchedule({
         day: 'Monday',
@@ -76,28 +66,37 @@ const DoctorSchedule = () => {
         slotDuration: 30,
         isAvailable: true
       });
+      toast.success('✅ Schedule added successfully!');
     } catch (error) {
       console.error('Error adding schedule:', error);
+      toast.error('Failed to add schedule');
     }
   };
 
   const handleDeleteSchedule = async (id) => {
     try {
-      // TODO: Delete from Firebase
+      await scheduleServices.deleteDoctorSchedule(id);
       setSchedules(schedules.filter(s => s.id !== id));
+      toast.success('Schedule deleted');
     } catch (error) {
       console.error('Error deleting schedule:', error);
+      toast.error('Failed to delete schedule');
     }
   };
 
   const handleToggleAvailability = async (id) => {
     try {
-      // TODO: Update in Firebase
+      const schedule = schedules.find(s => s.id === id);
+      const newStatus = !schedule.isAvailable;
+      
+      await scheduleServices.updateDoctorSchedule(id, { isAvailable: newStatus });
       setSchedules(schedules.map(s => 
-        s.id === id ? { ...s, isAvailable: !s.isAvailable } : s
+        s.id === id ? { ...s, isAvailable: newStatus } : s
       ));
+      toast.success(newStatus ? 'Marked as available' : 'Marked as unavailable');
     } catch (error) {
       console.error('Error updating availability:', error);
+      toast.error('Failed to update availability');
     }
   };
 

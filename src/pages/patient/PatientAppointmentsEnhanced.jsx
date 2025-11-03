@@ -21,10 +21,42 @@ import {
   PlusIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '@/contexts/AuthContext';
-import { appointmentServices } from '@/services/firebaseServices';
+import { appointmentServices, reviewServices } from '@/services/firebaseServices';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PaymentModal from '@/components/ui/PaymentModal';
+import ReviewModal from '@/components/ReviewModal';
+import toast from 'react-hot-toast';
+
+const parseAppointmentDateTime = (appointment) => {
+  if (!appointment?.appointmentDate || !appointment?.appointmentTime) {
+    return null;
+  }
+
+  const [time, modifier] = appointment.appointmentTime.split(' ');
+  if (!time || !modifier) return null;
+
+  let [hours, minutes] = time.split(':');
+  if (typeof minutes === 'undefined') {
+    minutes = '00';
+  }
+
+  let parsedHours = parseInt(hours, 10);
+  const parsedMinutes = parseInt(minutes, 10);
+
+  if (modifier.toUpperCase() === 'PM' && parsedHours !== 12) {
+    parsedHours += 12;
+  }
+  if (modifier.toUpperCase() === 'AM' && parsedHours === 12) {
+    parsedHours = 0;
+  }
+
+  const isoString = `${appointment.appointmentDate}T${parsedHours.toString().padStart(2, '0')}:${parsedMinutes
+    .toString()
+    .padStart(2, '0')}:00`;
+  return new Date(isoString);
+};
 
 const PatientAppointments = () => {
   const { user } = useAuth();
@@ -35,6 +67,9 @@ const PatientAppointments = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedAppointmentForPayment, setSelectedAppointmentForPayment] = useState(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedAppointmentForReview, setSelectedAppointmentForReview] = useState(null);
+  const [appointmentReviews, setAppointmentReviews] = useState({});
 
   useEffect(() => {
     if (user) {
@@ -47,6 +82,18 @@ const PatientAppointments = () => {
       setLoading(true);
       const appointmentData = await appointmentServices.getUserAppointments(user.uid, 'patient');
       setAppointments(appointmentData || []);
+      
+      // Fetch existing reviews for completed appointments
+      const reviewsMap = {};
+      for (const appointment of appointmentData) {
+        if (appointment.status === 'completed') {
+          const review = await reviewServices.getReviewForAppointment(appointment.id);
+          if (review) {
+            reviewsMap[appointment.id] = review;
+          }
+        }
+      }
+      setAppointmentReviews(reviewsMap);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       setAppointments([]);
@@ -103,7 +150,7 @@ const PatientAppointments = () => {
     if (filter === 'all') return true;
     if (filter === 'upcoming') {
       const now = new Date();
-      const appointmentDate = new Date(`${appointment.appointmentDate} ${appointment.appointmentTime}`);
+      const appointmentDate = parseAppointmentDateTime(appointment);
       return appointmentDate > now && (appointment.status === 'confirmed' || appointment.status === 'pending');
     }
     return appointment.status === filter;
@@ -113,7 +160,7 @@ const PatientAppointments = () => {
     { key: 'all', label: 'All', count: appointments.length, color: 'blue' },
     { key: 'upcoming', label: 'Upcoming', count: appointments.filter(apt => {
       const now = new Date();
-      const appointmentDate = new Date(`${apt.appointmentDate} ${apt.appointmentTime}`);
+      const appointmentDate = parseAppointmentDateTime(apt);
       return appointmentDate > now && (apt.status === 'confirmed' || apt.status === 'pending');
     }).length, color: 'purple' },
     { key: 'completed', label: 'Completed', count: appointments.filter(apt => apt.status === 'completed').length, color: 'green' },
@@ -166,6 +213,60 @@ const PatientAppointments = () => {
     }
   };
 
+  // Handle opening review modal
+  const handleOpenReviewModal = async (appointment) => {
+    try {
+      // Check if review already exists
+      if (appointmentReviews[appointment.id]) {
+        toast.error('You have already reviewed this appointment');
+        return;
+      }
+
+      // Check if patient can review
+      const canReview = await reviewServices.canReviewAppointment(
+        appointment.id,
+        user.uid
+      );
+      
+      if (!canReview) {
+        toast.error('You cannot review this appointment at this time');
+        return;
+      }
+      
+      setSelectedAppointmentForReview(appointment);
+      setReviewModalOpen(true);
+    } catch (error) {
+      console.error('Error checking review eligibility:', error);
+      toast.error('Failed to open review form');
+    }
+  };
+
+  // Handle review submission
+  const handleSubmitReview = async (reviewData) => {
+    try {
+      const fullReviewData = {
+        appointmentId: selectedAppointmentForReview.id,
+        patientId: user.uid,
+        patientName: user.displayName || user.email,
+        doctorId: selectedAppointmentForReview.doctorId,
+        doctorName: selectedAppointmentForReview.doctorName,
+        ...reviewData
+      };
+      
+      await reviewServices.createReview(fullReviewData);
+      
+      toast.success('✅ Thank you for your review!');
+      setReviewModalOpen(false);
+      setSelectedAppointmentForReview(null);
+      
+      // Refresh appointments list to show the review was submitted
+      await fetchAppointments();
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      toast.error('Failed to submit review. Please try again.');
+    }
+  };
+
   if (loading && appointments.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
@@ -190,13 +291,22 @@ const PatientAppointments = () => {
               </h1>
               <p className="mt-2 text-gray-600">Manage and track all your medical appointments</p>
             </div>
-            <Link
-              to="/appointment/book"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105"
-            >
-              <PlusIcon className="w-5 h-5" />
-              Book New Appointment
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/patient/video-appointments"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-blue-200 text-blue-600 rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105"
+              >
+                <VideoCameraIcon className="w-5 h-5" />
+                Video Calls
+              </Link>
+              <Link
+                to="/appointment/book"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105"
+              >
+                <PlusIcon className="w-5 h-5" />
+                Book New Appointment
+              </Link>
+            </div>
           </div>
         </motion.div>
 
@@ -259,6 +369,9 @@ const PatientAppointments = () => {
               const StatusIcon = statusBadge.icon;
               const PaymentIcon = paymentBadge.icon;
               const isExpanded = expandedAppointment === appointment.id;
+              const appointmentDateTime = parseAppointmentDateTime(appointment);
+              const callIsPast = appointmentDateTime && appointmentDateTime < new Date();
+              const showVideoPrepButton = appointment.type === 'video' && !callIsPast;
 
               return (
                 <motion.div
@@ -315,7 +428,16 @@ const PatientAppointments = () => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          {showVideoPrepButton && (
+                            <Link
+                              to={`/patient/video-consultation/${appointment.id}`}
+                              className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all hover:scale-105 flex items-center gap-1"
+                            >
+                              <VideoCameraIcon className="w-4 h-4" />
+                              Prepare Call
+                            </Link>
+                          )}
                           {appointment.paymentStatus !== 'paid' && appointment.status === 'confirmed' && (
                             <button
                               onClick={() => handlePayment(appointment)}
@@ -324,6 +446,21 @@ const PatientAppointments = () => {
                               <CreditCardIcon className="w-4 h-4 inline mr-1" />
                               Pay Now
                             </button>
+                          )}
+                          {appointment.status === 'completed' && !appointmentReviews[appointment.id] && (
+                            <button
+                              onClick={() => handleOpenReviewModal(appointment)}
+                              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all hover:scale-105 flex items-center gap-1"
+                            >
+                              <StarSolidIcon className="w-4 h-4" />
+                              Write Review
+                            </button>
+                          )}
+                          {appointmentReviews[appointment.id] && (
+                            <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-semibold flex items-center gap-1">
+                              <StarSolidIcon className="w-4 h-4" />
+                              Reviewed
+                            </span>
                           )}
                           <button
                             onClick={() => setExpandedAppointment(isExpanded ? null : appointment.id)}
@@ -384,6 +521,21 @@ const PatientAppointments = () => {
                                 ${appointment.consultationFee || '50.00'}
                               </p>
                             </div>
+
+                            {(appointment.urgencyLevel || appointment.priorityScore) && (
+                              <div className="bg-white rounded-xl p-4 shadow-sm border border-amber-100">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <ExclamationTriangleIcon className="w-5 h-5 text-amber-500" />
+                                  <span className="text-sm font-semibold text-gray-700">Triage Priority</span>
+                                </div>
+                                <p className="text-gray-900 font-semibold">
+                                  {appointment.urgencyLevel ? appointment.urgencyLevel.charAt(0).toUpperCase() + appointment.urgencyLevel.slice(1) : 'Routine'}
+                                </p>
+                                {typeof appointment.priorityScore !== 'undefined' && (
+                                  <p className="text-xs text-gray-500 mt-1">Priority score: {appointment.priorityScore}</p>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Reason for Visit */}
@@ -394,6 +546,40 @@ const PatientAppointments = () => {
                                 <span className="text-sm font-semibold text-gray-700">Reason for Visit</span>
                               </div>
                               <p className="text-gray-700 leading-relaxed">{appointment.reason}</p>
+                              {(appointment.urgencyLevel || appointment.appointmentNumber) && (
+                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                  {appointment.appointmentNumber && (
+                                    <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                                      <span className="block text-xs uppercase text-blue-600 font-semibold">Appointment Number</span>
+                                      <span className="font-semibold text-blue-800">{appointment.appointmentNumber}</span>
+                                    </div>
+                                  )}
+                                  {appointment.urgencyLevel && (
+                                    <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                                      <span className="block text-xs uppercase text-amber-600 font-semibold">Urgency</span>
+                                      <span className="font-semibold text-amber-800">
+                                        {appointment.urgencyLevel.charAt(0).toUpperCase() + appointment.urgencyLevel.slice(1)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {Array.isArray(appointment.recommendedSpecialties) && appointment.recommendedSpecialties.length > 0 && (
+                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                              <div className="flex items-center gap-3 mb-3">
+                                <UserIcon className="w-5 h-5 text-teal-600" />
+                                <span className="text-sm font-semibold text-gray-700">Recommended Specialists</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {appointment.recommendedSpecialties.map((specialist) => (
+                                  <span key={specialist} className="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-semibold rounded-full border border-teal-200">
+                                    {specialist}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           )}
 
@@ -462,6 +648,17 @@ const PatientAppointments = () => {
           appointment={selectedAppointmentForPayment}
           onPaymentComplete={processPayment}
           isProcessing={isProcessingPayment}
+        />
+
+        {/* Review Modal */}
+        <ReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => {
+            setReviewModalOpen(false);
+            setSelectedAppointmentForReview(null);
+          }}
+          appointment={selectedAppointmentForReview}
+          onSubmit={handleSubmitReview}
         />
       </div>
     </div>

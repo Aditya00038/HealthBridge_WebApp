@@ -1,0 +1,13 @@
+<svg width="800" height="200" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Health text -->
+  <text x="0" y="120" font-family="Georgia, serif" font-size="90" font-weight="700" fill="#4B2E2B">Health</text>
+  
+  <!-- Green diamond with HB -->
+  <g transform="translate(440, 40)">
+    <rect x="0" y="0" width="90" height="90" rx="8" transform="rotate(45 45 45)" fill="#6B9F4D"/>
+    <text x="45" y="60" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="white" text-anchor="middle">HB</text>
+  </g>
+  
+  <!-- Bridge text -->
+  <text x="530" y="120" font-family="Georgia, serif" font-size="90" font-weight="700" fill="#4B2E2B">Bridge</text>
+</svg>

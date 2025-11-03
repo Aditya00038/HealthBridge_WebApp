@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   UserIcon,
@@ -9,8 +10,10 @@ import {
   BellIcon,
   GlobeAltIcon,
   ShieldCheckIcon,
-  KeyIcon,
-  DevicePhoneMobileIcon
+  DevicePhoneMobileIcon,
+  ArrowRightOnRectangleIcon,
+  UserCircleIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -20,11 +23,13 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/firebase/config';
 
 const ProfileSettings = () => {
-  const { user, userProfile, updateUserProfile } = useAuth();
-  const { t, currentLanguage, changeLanguage, availableLanguages } = useLanguage();
+  const { user, userProfile, updateUserProfile, logout } = useAuth();
+  const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [editingField, setEditingField] = useState(null);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   
   const [profileData, setProfileData] = useState({
     displayName: '',
@@ -48,9 +53,12 @@ const ProfileSettings = () => {
     appointmentReminders: true,
     promotionalEmails: false,
     language: currentLanguage,
-    theme: 'light',
     privacy: 'public'
   });
+
+  const profilePageHref = userProfile?.role === 'doctor'
+    ? (user?.uid ? `/profile/${user.uid}` : '/profile/settings')
+    : '/patient/profile';
 
   useEffect(() => {
     if (userProfile) {
@@ -76,11 +84,25 @@ const ProfileSettings = () => {
         appointmentReminders: userProfile.settings?.appointmentReminders ?? true,
         promotionalEmails: userProfile.settings?.promotionalEmails ?? false,
         language: userProfile.settings?.language || currentLanguage,
-        theme: userProfile.settings?.theme || 'light',
         privacy: userProfile.settings?.privacy || 'public'
       });
     }
   }, [userProfile, user, currentLanguage]);
+
+  const handleLogout = async () => {
+    if (logoutLoading) return;
+
+    try {
+      setLogoutLoading(true);
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out from settings:', error);
+      toast.error('Failed to log out. Please try again.');
+    } finally {
+      setLogoutLoading(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({
@@ -214,22 +236,60 @@ const ProfileSettings = () => {
     pa: 'ਪੰਜਾਬੀ'
   };
 
+  const cardBaseClasses = 'rounded-3xl border border-slate-200 bg-white shadow-soft';
+  const cardContentClasses = `${cardBaseClasses} p-6`;
+  const inputControlClasses = 'w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition';
+  const textAreaControlClasses = `${inputControlClasses} min-h-[120px]`;
+  const readOnlyPillClasses = 'flex-1 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-slate-700 whitespace-pre-wrap';
+  const primaryActionClasses = 'inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 text-white font-semibold px-4 py-2.5 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition disabled:opacity-60 disabled:cursor-not-allowed';
+  const iconConfirmClasses = 'inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition disabled:opacity-60';
+  const iconNeutralClasses = 'inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition';
+  const toggleInputClasses = 'w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded';
+
   const ProfileField = ({ field, label, type = 'text', options = null }) => {
     const isEditing = editingField === field;
+    const isMultiline = type === 'textarea';
+    const fieldWrapperClasses = isMultiline
+      ? 'flex flex-col md:flex-row md:items-start gap-3'
+      : 'flex flex-wrap items-center gap-3';
+    const readOnlyClasses = isMultiline
+      ? `${readOnlyPillClasses} min-h-[3.5rem]`
+      : `${readOnlyPillClasses} min-h-[2.75rem] flex items-center`;
+    
+    // Local state for editing - prevents parent re-render on every keystroke
+    const [editValue, setEditValue] = React.useState(profileData[field] || '');
+    
+    // Update local state when entering edit mode
+    React.useEffect(() => {
+      if (isEditing) {
+        setEditValue(profileData[field] || '');
+      }
+    }, [isEditing, profileData, field]);
+    
+    const handleSave = async () => {
+      // Update parent state with the edited value
+      handleInputChange(field, editValue);
+      await handleSaveField(field);
+    };
+    
+    const handleCancel = () => {
+      setEditValue(profileData[field] || '');
+      setEditingField(null);
+    };
     
     return (
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           {label}
         </label>
-        <div className="flex items-center space-x-2">
+        <div className={fieldWrapperClasses}>
           {isEditing ? (
             <>
               {type === 'select' ? (
                 <select
-                  value={profileData[field]}
-                  onChange={(e) => handleInputChange(field, e.target.value)}
-                  className="input-hb flex-1"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  className={inputControlClasses}
                 >
                   <option value="">Select {label}</option>
                   {options?.map(option => (
@@ -240,41 +300,43 @@ const ProfileSettings = () => {
                 </select>
               ) : type === 'textarea' ? (
                 <textarea
-                  value={profileData[field]}
-                  onChange={(e) => handleInputChange(field, e.target.value)}
-                  className="input-hb flex-1"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  className={textAreaControlClasses}
                   rows="3"
+                  autoFocus
                 />
               ) : (
                 <input
                   type={type}
-                  value={profileData[field]}
-                  onChange={(e) => handleInputChange(field, e.target.value)}
-                  className="input-hb flex-1"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  className={inputControlClasses}
+                  autoFocus
                 />
               )}
               <button
-                onClick={() => handleSaveField(field)}
+                onClick={handleSave}
                 disabled={loading}
-                className="btn-hb-primary py-2 px-3"
+                className={iconConfirmClasses}
               >
                 <CheckIcon className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setEditingField(null)}
-                className="btn-hb-secondary py-2 px-3"
+                onClick={handleCancel}
+                className={iconNeutralClasses}
               >
                 <XMarkIcon className="w-4 h-4" />
               </button>
             </>
           ) : (
             <>
-              <div className="flex-1 py-2 px-3 bg-gray-50 rounded-lg min-h-[2.5rem] flex items-center">
-                {profileData[field] || <span className="text-gray-400">Not set</span>}
+              <div className={readOnlyClasses}>
+                {profileData[field] || <span className="text-slate-400">Not set</span>}
               </div>
               <button
                 onClick={() => setEditingField(field)}
-                className="btn-hb-secondary py-2 px-3"
+                className={iconNeutralClasses}
               >
                 <PencilIcon className="w-4 h-4" />
               </button>
@@ -294,29 +356,48 @@ const ProfileSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container-hb py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Profile Settings
-            </h1>
-            <p className="text-gray-600">
-              Manage your profile information and preferences
-            </p>
+  <div className="min-h-screen bg-slate-50">
+      <div className="container-hb py-8 px-4 sm:px-6 lg:px-8">
+        <div>
+          {/* Simple Header */}
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">
+                Profile Settings
+              </h1>
+              <p className="text-slate-600 text-sm">
+                Manage your profile information and preferences
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={logoutLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors disabled:opacity-60"
+            >
+              <ArrowRightOnRectangleIcon className="w-5 h-5" />
+              {logoutLoading ? 'Signing out...' : 'Sign out'}
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Profile Photo Section */}
+          {/* Simple 3-line Quick Link */}
+          <div className="mb-6">
+            <Link
+              to={profilePageHref}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
+            >
+              <UserCircleIcon className="w-5 h-5" />
+              <span className="font-medium">View Profile Page</span>
+              <ChevronRightIcon className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Simple Profile Photo Section */}
             <div className="lg:col-span-1">
-              <div className="card-hb text-center">
-                <div className="relative inline-block mb-6">
-                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 mx-auto relative">
+              <div className={`${cardContentClasses} text-center`}>
+                <div className="relative inline-block mb-4">
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 mx-auto">
                     {profileData.profilePhoto ? (
                       <img
                         src={profileData.profilePhoto}
@@ -324,8 +405,8 @@ const ProfileSettings = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-hb-primary">
-                        <UserIcon className="w-16 h-16 text-white" />
+                      <div className="w-full h-full flex items-center justify-center bg-indigo-500">
+                        <UserIcon className="w-12 h-12 text-white" />
                       </div>
                     )}
                     {photoUploading && (
@@ -335,8 +416,8 @@ const ProfileSettings = () => {
                     )}
                   </div>
                   
-                  <label className="absolute bottom-0 right-0 bg-hb-primary hover:bg-hb-primary-dark text-white p-2 rounded-full cursor-pointer transition-colors">
-                    <CameraIcon className="w-5 h-5" />
+                  <label className="absolute bottom-0 right-0 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-full cursor-pointer transition-colors shadow-lg">
+                    <CameraIcon className="w-4 h-4" />
                     <input
                       type="file"
                       accept="image/*"
@@ -347,30 +428,32 @@ const ProfileSettings = () => {
                   </label>
                 </div>
                 
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-slate-900 mb-1">
                   {profileData.displayName || 'User'}
                 </h3>
-                <p className="text-gray-600 mb-4">
-                  {userProfile?.role === 'doctor' ? 'Doctor' : 'Patient'}
+                <p className="text-sm text-slate-500 mb-2">
+                  {profileData.email}
                 </p>
+                <span className="inline-block px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full">
+                  {userProfile?.role === 'doctor' ? 'Doctor' : 'Patient'}
+                </span>
                 
                 {userProfile?.role === 'doctor' && profileData.specialization && (
-                  <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm inline-block">
+                  <p className="text-sm text-slate-600 mt-3">
                     {profileData.specialization}
-                  </div>
+                  </p>
                 )}
               </div>
             </div>
 
             {/* Profile Information */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Basic Information */}
-              <div className="card-hb">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-                  <UserIcon className="w-5 h-5 mr-2" />
+            <div className="lg:col-span-2 space-y-4">
+              {/* Simple Basic Information */}
+              <div className={cardContentClasses}>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <UserIcon className="w-5 h-5 text-indigo-500" />
                   Basic Information
                 </h3>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <ProfileField
                     field="displayName"
@@ -417,14 +500,13 @@ const ProfileSettings = () => {
                 </div>
               </div>
 
-              {/* Professional Information (for doctors) */}
+              {/* Simple Professional Information (for doctors) */}
               {userProfile?.role === 'doctor' && (
-                <div className="card-hb">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-                    <ShieldCheckIcon className="w-5 h-5 mr-2" />
+                <div className={cardContentClasses}>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <ShieldCheckIcon className="w-5 h-5 text-purple-500" />
                     Professional Information
                   </h3>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <ProfileField
                       field="specialization"
@@ -457,24 +539,23 @@ const ProfileSettings = () => {
                 </div>
               )}
 
-              {/* Settings */}
-              <div className="card-hb">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-                  <BellIcon className="w-5 h-5 mr-2" />
+              {/* Simple Settings */}
+              <div className={cardContentClasses}>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <BellIcon className="w-5 h-5 text-teal-500" />
                   Preferences & Settings
                 </h3>
-                
                 <div className="space-y-6">
                   {/* Language Setting */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       <GlobeAltIcon className="w-4 h-4 inline mr-1" />
                       Language
                     </label>
                     <select
                       value={settings.language}
                       onChange={(e) => handleSettingChange('language', e.target.value)}
-                      className="input-hb max-w-xs"
+                      className={`${inputControlClasses} max-w-xs`}
                     >
                       {availableLanguages.map(lang => (
                         <option key={lang} value={lang}>
@@ -486,7 +567,7 @@ const ProfileSettings = () => {
 
                   {/* Notification Settings */}
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-900">Notifications</h4>
+                    <h4 className="font-medium text-slate-900">Notifications</h4>
                     
                     <div className="space-y-3">
                       {[
@@ -500,10 +581,10 @@ const ProfileSettings = () => {
                             type="checkbox"
                             checked={settings[setting.key]}
                             onChange={(e) => handleSettingChange(setting.key, e.target.checked)}
-                            className="w-4 h-4 text-hb-primary focus:ring-hb-primary border-gray-300 rounded"
+                            className={toggleInputClasses}
                           />
-                          <setting.icon className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-700">{setting.label}</span>
+                          <setting.icon className="w-4 h-4 text-slate-400" />
+                          <span className="text-slate-700">{setting.label}</span>
                         </label>
                       ))}
                     </div>
@@ -511,14 +592,14 @@ const ProfileSettings = () => {
 
                   {/* Privacy Setting */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
                       <ShieldCheckIcon className="w-4 h-4 inline mr-1" />
                       Profile Visibility
                     </label>
                     <select
                       value={settings.privacy}
                       onChange={(e) => handleSettingChange('privacy', e.target.value)}
-                      className="input-hb max-w-xs"
+                      className={`${inputControlClasses} max-w-xs`}
                     >
                       <option value="public">Public</option>
                       <option value="private">Private</option>
@@ -526,11 +607,11 @@ const ProfileSettings = () => {
                     </select>
                   </div>
                   
-                  <div className="pt-4 border-t">
+                  <div className="pt-4">
                     <button
                       onClick={handleSaveSettings}
                       disabled={loading}
-                      className="btn-hb-primary"
+                      className={primaryActionClasses}
                     >
                       {loading ? 'Saving...' : 'Save Settings'}
                     </button>
@@ -539,10 +620,10 @@ const ProfileSettings = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
-};
+}; 
 
 export default ProfileSettings;

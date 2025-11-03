@@ -1,29 +1,31 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Bars3Icon, 
   XMarkIcon,
-  HeartIcon,
-  UserCircleIcon,
-  CalendarIcon,
-  ChatBubbleLeftRightIcon
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NavbarClean = () => {
-  const { user, userProfile, logout } = useAuth();
+  const { user, userProfile } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  const navClasses = 'fixed top-0 left-0 right-0 z-50 bg-white/95 border-b border-slate-200 backdrop-blur-sm transition-colors duration-300';
+  const brandAccentClasses = 'bg-indigo-600 hover:bg-indigo-700 text-white';
+  const brandTitleClasses = 'text-xl font-semibold text-slate-900';
+  const navLinkBase = 'text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors';
+  const navLinkActive = 'text-indigo-600';
+  const settingsLinkClasses = 'flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-colors';
+  const authLinkSignIn = 'px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors';
+  const authLinkCTA = 'px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors';
+  const mobileMenuWrapperClasses = 'md:hidden border-t border-slate-200 bg-white/98 backdrop-blur-sm transition-colors';
+  const mobileNavLinkBase = 'block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors';
+  const mobileNavLinkActive = 'bg-indigo-50 text-indigo-600';
+  const mobileSettingsClasses = 'block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors';
+  const mobileSignInLink = 'block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors';
+  const mobileSignInCTA = 'block px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium text-center hover:bg-indigo-700 transition-colors';
+  const mobileButtonClasses = 'md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors';
 
   const publicNavigation = [
     { name: 'Features', href: '/#features' },
@@ -34,8 +36,9 @@ const NavbarClean = () => {
   const patientNavigation = [
     { name: 'Dashboard', href: '/patient/dashboard' },
     { name: 'Book Appointment', href: '/appointment/book' },
+    { name: 'Video Calls', href: '/patient/video-appointments' },
     { name: 'AI Assistant', href: '/chatbot' },
-    { name: 'History', href: '/patient/history' },
+    { name: 'Prescriptions', href: '/patient/prescriptions' },
     { name: 'Locate', href: '/locate' }
   ];
 
@@ -65,15 +68,14 @@ const NavbarClean = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100">
+    <nav className={navClasses}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center group-hover:bg-indigo-700 transition-colors">
-              <HeartIcon className="w-5 h-5 text-white" />
+            <div className="flex items-center">
+              <img src="/app-logo.png" alt="CareConnect" className="h-16 w-auto" />
             </div>
-            <span className="text-xl font-semibold text-slate-900">HealthBridge</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -82,10 +84,8 @@ const NavbarClean = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-sm font-medium transition-colors ${
-                  isActivePath(item.href)
-                    ? 'text-indigo-600'
-                    : 'text-slate-600 hover:text-slate-900'
+                className={`${navLinkBase} ${
+                  isActivePath(item.href) ? navLinkActive : ''
                 }`}
               >
                 {item.name}
@@ -96,32 +96,24 @@ const NavbarClean = () => {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
             {user ? (
-              <>
-                <Link
-                  to="/profile/settings"
-                  className="flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900"
-                >
-                  <UserCircleIcon className="w-5 h-5" />
-                  <span>{userProfile?.name || userProfile?.displayName || 'Profile'}</span>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900"
-                >
-                  Sign Out
-                </button>
-              </>
+              <Link
+                to="/profile/settings"
+                className={settingsLinkClasses}
+              >
+                <Cog6ToothIcon className="w-5 h-5" />
+                <span>Settings</span>
+              </Link>
             ) : (
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900"
+                  className={authLinkSignIn}
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/signup"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  className={authLinkCTA}
                 >
                   Get Started
                 </Link>
@@ -132,7 +124,7 @@ const NavbarClean = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg"
+            className={mobileButtonClasses}
           >
             {mobileMenuOpen ? (
               <XMarkIcon className="w-6 h-6" />
@@ -145,56 +137,43 @@ const NavbarClean = () => {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white">
+        <div className={mobileMenuWrapperClasses}>
           <div className="px-6 py-4 space-y-3">
             {currentNavigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg text-sm font-medium ${
-                  isActivePath(item.href)
-                    ? 'bg-indigo-50 text-indigo-600'
-                    : 'text-slate-700 hover:bg-slate-50'
+                className={`${mobileNavLinkBase} ${
+                  isActivePath(item.href) ? mobileNavLinkActive : ''
                 }`}
               >
                 {item.name}
               </Link>
             ))}
             
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-200">
               {user ? (
-                <>
-                  <Link
-                    to="/profile/settings"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Profile Settings
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Sign Out
-                  </button>
-                </>
+                <Link
+                  to="/profile/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={mobileSettingsClasses}
+                >
+                  Settings
+                </Link>
               ) : (
                 <>
                   <Link
                     to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    className={mobileSignInLink}
                   >
                     Sign In
                   </Link>
                   <Link
                     to="/signup"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium text-center hover:bg-indigo-700"
+                    className={mobileSignInCTA}
                   >
                     Get Started
                   </Link>

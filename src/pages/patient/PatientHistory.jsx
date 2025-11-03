@@ -8,73 +8,110 @@ import {
   CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  ShoppingBagIcon
+  ShoppingBagIcon,
+  HeartIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  PrinterIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import toast from 'react-hot-toast';
 
-const PatientHistory = () => {
+const HealthHistoryPage = () => {
   const { user, userProfile } = useAuth();
   const [medicalRecords, setMedicalRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedRecord, setExpandedRecord] = useState(null);
+  const [labResults, setLabResults] = useState([]);
+  const [wellnessSummary, setWellnessSummary] = useState({});
+  const [vaccinationRecords, setVaccinationRecords] = useState([]);
 
   useEffect(() => {
-    loadMedicalHistory();
-  }, []);
+    if (user) {
+      loadMedicalHistory();
+    }
+  }, [user]);
 
   const loadMedicalHistory = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
-      // TODO: Fetch from Firebase - medical records for this patient
-      setMedicalRecords([
+      // Fetch from Firebase - medical records for this patient
+      const recordsQuery = query(
+        collection(db, 'patientRecords'),
+        where('patientId', '==', user.uid),
+        orderBy('visitDate', 'desc')
+      );
+      
+      const recordsSnapshot = await getDocs(recordsQuery);
+      const records = recordsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          date: data.visitDate?.toDate().toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          doctorName: data.doctorName || 'Unknown Doctor',
+          specialty: data.specialty || 'General Physician',
+          hospital: data.hospital || 'HealthBridge',
+          diagnosis: data.diagnosis || 'Consultation',
+          healthCondition: data.healthCondition || 'No details provided',
+          medicines: data.medicines || [],
+          instructions: data.instructions || '',
+          nextVisit: data.nextVisit || null,
+          prescriptionSharedWith: ['patient', 'medicine-seller'],
+          reason: data.reason || '',
+          visitDate: data.visitDate?.toDate()
+        };
+      });
+      
+      console.log('📋 Loaded medical records:', records);
+      setMedicalRecords(records);
+
+      setLabResults([
         {
-          id: 'MR001',
-          date: '2025-10-18',
-          doctorName: 'Dr. Amit Kumar',
-          specialty: 'General Physician',
-          hospital: 'Apollo Hospital, Mumbai',
-          diagnosis: 'Viral Fever',
-          healthCondition: 'Patient presented with high fever (102°F), body ache, and fatigue. Vitals stable. No respiratory distress.',
-          medicines: [
-            {
-              name: 'Paracetamol 500mg',
-              dosage: '2 tablets',
-              frequency: 'Three times daily',
-              duration: '5 days',
-              timing: 'After meals'
-            },
-            {
-              name: 'Azithromycin 500mg',
-              dosage: '1 tablet',
-              frequency: 'Once daily',
-              duration: '3 days',
-              timing: 'After meals'
-            }
-          ],
-          instructions: 'Take plenty of fluids. Rest for 3-4 days. Avoid cold beverages.',
-          nextVisit: '2025-10-25',
-          prescriptionSharedWith: ['patient', 'medicine-seller']
+          id: 'LAB-1205',
+          testName: 'Complete Blood Count',
+          labName: 'Apollo Diagnostics',
+          date: '2025-10-17',
+          status: 'Normal',
+          highlights: 'All parameters within normal range',
+          trend: 'Stable'
         },
         {
-          id: 'MR002',
-          date: '2025-10-10',
-          doctorName: 'Dr. Priya Mehta',
-          specialty: 'Cardiologist',
-          hospital: 'Lilavati Hospital, Mumbai',
-          diagnosis: 'Routine Checkup',
-          healthCondition: 'BP: 120/80, Pulse: 72 bpm. ECG normal. Overall cardiovascular health is good.',
-          medicines: [
-            {
-              name: 'Aspirin 75mg',
-              dosage: '1 tablet',
-              frequency: 'Once daily',
-              duration: '30 days',
-              timing: 'After dinner'
-            }
-          ],
-          instructions: 'Continue regular exercise. Low salt diet recommended. Follow-up in 3 months.',
-          nextVisit: '2026-01-10',
-          prescriptionSharedWith: ['patient', 'medicine-seller']
+          id: 'LAB-1178',
+          testName: 'HbA1C',
+          labName: 'Metropolis Labs',
+          date: '2025-09-10',
+          status: 'Slightly High',
+          highlights: 'HbA1C at 6.2% - monitor diet',
+          trend: 'Improving'
+        }
+      ]);
+
+      setWellnessSummary({
+        weight: '68.4 kg',
+        bmi: '22.1',
+        bloodPressure: '118 / 76 mmHg',
+        heartRate: '72 bpm',
+        sleep: '7h 20m avg',
+        activity: '5,600 steps avg'
+      });
+
+      setVaccinationRecords([
+        {
+          name: 'Influenza Vaccine',
+          status: 'Due Soon',
+          dueDate: '2025-11-05',
+          lastDose: '2024-10-30'
+        },
+        {
+          name: 'COVID-19 Booster',
+          status: 'Completed',
+          dueDate: null,
+          lastDose: '2025-02-12'
         }
       ]);
     } catch (error) {
@@ -88,6 +125,227 @@ const PatientHistory = () => {
     setExpandedRecord(expandedRecord === recordId ? null : recordId);
   };
 
+  const handlePrintPrescription = (record) => {
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Prescription - ${record.doctorName}</title>
+        <style>
+          @media print {
+            @page { margin: 20mm; }
+          }
+          body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+          }
+          .header h1 {
+            margin: 0;
+            color: #2563eb;
+            font-size: 28px;
+          }
+          .header p {
+            margin: 5px 0;
+            color: #666;
+          }
+          .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+          }
+          .info-box {
+            flex: 1;
+          }
+          .info-box h3 {
+            margin: 0 0 10px 0;
+            color: #334155;
+            font-size: 14px;
+            text-transform: uppercase;
+            font-weight: bold;
+          }
+          .info-box p {
+            margin: 3px 0;
+            color: #475569;
+          }
+          .section {
+            margin: 20px 0;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+          }
+          .medicines-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+          }
+          .medicines-table th {
+            background: #2563eb;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+          }
+          .medicines-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          .medicines-table tr:nth-child(even) {
+            background: #f8fafc;
+          }
+          .instructions {
+            padding: 15px;
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            margin: 15px 0;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: right;
+          }
+          .signature {
+            margin-top: 50px;
+            text-align: right;
+          }
+          .signature-line {
+            border-top: 2px solid #000;
+            width: 200px;
+            margin-left: auto;
+            margin-top: 60px;
+          }
+          .print-date {
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>🏥 HealthBridge</h1>
+          <p><strong>${record.doctorName}</strong></p>
+          <p>${record.specialty} | ${record.hospital}</p>
+        </div>
+
+        <div class="info-section">
+          <div class="info-box">
+            <h3>Patient Information</h3>
+            <p><strong>Name:</strong> ${userProfile?.name || 'Patient'}</p>
+            <p><strong>Age:</strong> ${userProfile?.age || 'N/A'}</p>
+            <p><strong>Gender:</strong> ${userProfile?.gender || 'N/A'}</p>
+          </div>
+          <div class="info-box" style="text-align: right;">
+            <h3>Prescription Details</h3>
+            <p><strong>Date:</strong> ${new Date(record.date).toLocaleDateString('en-IN')}</p>
+            <p><strong>Record ID:</strong> ${record.id}</p>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Diagnosis</div>
+          <p>${record.diagnosis || 'N/A'}</p>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Health Condition</div>
+          <p>${record.healthCondition || 'N/A'}</p>
+        </div>
+
+        ${record.medicines && record.medicines.length > 0 ? `
+          <div class="section">
+            <div class="section-title">Prescription (Rx)</div>
+            <table class="medicines-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Medicine Name</th>
+                  <th>Dosage</th>
+                  <th>Frequency</th>
+                  <th>Duration</th>
+                  <th>Timing</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${record.medicines.map((med, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td><strong>${med.name}</strong></td>
+                    <td>${med.dosage}</td>
+                    <td>${med.frequency}</td>
+                    <td>${med.duration}</td>
+                    <td>${med.timing}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        ${record.instructions ? `
+          <div class="instructions">
+            <strong>⚠️ Instructions:</strong><br>
+            ${record.instructions}
+          </div>
+        ` : ''}
+
+        ${record.nextVisit ? `
+          <div class="section">
+            <div class="section-title">Next Visit</div>
+            <p><strong>Date:</strong> ${new Date(record.nextVisit).toLocaleDateString('en-IN')}</p>
+          </div>
+        ` : ''}
+
+        <div class="signature">
+          <div class="signature-line"></div>
+          <p><strong>${record.doctorName}</strong></p>
+          <p>${record.specialty}</p>
+        </div>
+
+        <div class="print-date">
+          This prescription was issued on ${new Date(record.date).toLocaleString('en-IN')}
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <ArrowPathIcon className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading your medical history...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -97,9 +355,9 @@ const PatientHistory = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-gray-900">Medical History</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Health History & Wellness Records</h1>
           <p className="mt-2 text-gray-600">
-            View your past appointments, prescriptions, and health records
+            Monitor doctor visits, prescriptions, lab reports, and day-to-day wellness insights in one secure place.
           </p>
         </motion.div>
 
@@ -154,6 +412,125 @@ const PatientHistory = () => {
           </motion.div>
         </div>
 
+        {/* Wellness Snapshot */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Vital Trends</h2>
+                <p className="text-sm text-gray-500">Latest readings from your recent visits</p>
+              </div>
+              <div className="bg-red-50 text-red-500 p-2 rounded-full">
+                <HeartIcon className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-gray-500">Weight</p>
+                <p className="text-lg font-semibold text-gray-900">{wellnessSummary.weight || '--'}</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-gray-500">BMI</p>
+                <p className="text-lg font-semibold text-gray-900">{wellnessSummary.bmi || '--'}</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-gray-500">Blood Pressure</p>
+                <p className="text-lg font-semibold text-gray-900">{wellnessSummary.bloodPressure || '--'}</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-gray-500">Resting Heart Rate</p>
+                <p className="text-lg font-semibold text-gray-900">{wellnessSummary.heartRate || '--'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Lifestyle & Habits</h2>
+                <p className="text-sm text-gray-500">Daily habits supporting your health goals</p>
+              </div>
+              <div className="bg-purple-50 text-purple-500 p-2 rounded-full">
+                <SparklesIcon className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="space-y-4 text-sm text-gray-600">
+              <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                <span>Sleep Quality</span>
+                <span className="font-semibold text-gray-900">{wellnessSummary.sleep || '--'}</span>
+              </div>
+              <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                <span>Daily Activity</span>
+                <span className="font-semibold text-gray-900">{wellnessSummary.activity || '--'}</span>
+              </div>
+              <p className="text-xs text-gray-500">
+                Tip: Maintain consistent sleep and light cardio to keep vitals within the ideal range.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Vaccinations & Preventive Care</h2>
+                <p className="text-sm text-gray-500">Upcoming boosters and completed shots</p>
+              </div>
+              <div className="bg-green-50 text-green-500 p-2 rounded-full">
+                <ShieldCheckIcon className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              {vaccinationRecords.map((shot, index) => (
+                <div key={index} className="border border-gray-100 rounded-xl p-4 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-gray-900">{shot.name}</p>
+                    <span className={`text-xs font-medium px-3 py-1 rounded-full ${shot.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {shot.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Last dose: {shot.lastDose ? new Date(shot.lastDose).toLocaleDateString('en-IN') : 'N/A'}</p>
+                  {shot.dueDate && (
+                    <p className="text-xs text-amber-600 mt-1">Due on {new Date(shot.dueDate).toLocaleDateString('en-IN')}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Lab Results */}
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Recent Lab Results</h2>
+              <p className="text-sm text-gray-500">Key highlights from partner diagnostics centres</p>
+            </div>
+            <button className="text-sm font-medium text-blue-600 hover:text-blue-700">
+              View all reports
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {labResults.map((result) => (
+              <div key={result.id} className="border border-gray-100 rounded-2xl p-5 bg-gradient-to-br from-white to-blue-50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">{result.labName}</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{result.testName}</h3>
+                  </div>
+                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${result.status === 'Normal' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {result.status}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Tested on {new Date(result.date).toLocaleDateString('en-IN')}</p>
+                <p className="mt-3 text-sm text-gray-700 bg-white/70 rounded-xl px-4 py-3 border border-blue-100">
+                  {result.highlights}
+                </p>
+                <p className="mt-2 text-xs text-blue-600 font-semibold">Trend: {result.trend}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Medical Records Timeline */}
         <div className="space-y-6">
           {medicalRecords.map((record, index) => (
@@ -172,7 +549,7 @@ const PatientHistory = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4 flex-1">
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {record.doctorName.charAt(3)}
+                      {record.doctorName.charAt(0)}
                     </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-gray-900">{record.doctorName}</h3>
@@ -305,8 +682,12 @@ const PatientHistory = () => {
 
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-2">
-                      <button className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm">
-                        Download Prescription
+                      <button
+                        onClick={() => handlePrintPrescription(record)}
+                        className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm flex items-center justify-center gap-2"
+                      >
+                        <PrinterIcon className="w-4 h-4" />
+                        Print Prescription
                       </button>
                       <button className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm">
                         Share with Doctor
@@ -345,4 +726,4 @@ const PatientHistory = () => {
   );
 };
 
-export default PatientHistory;
+export default HealthHistoryPage;

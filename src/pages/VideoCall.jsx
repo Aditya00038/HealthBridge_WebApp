@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { appointmentServices } from '@/services/firebaseServices';
 import {
   VideoCameraIcon,
   VideoCameraSlashIcon,
@@ -11,13 +14,45 @@ import {
   Cog6ToothIcon,
   UsersIcon,
   ClockIcon,
+  CalendarIcon,
   InformationCircleIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/solid';
 
+const parseAppointmentDateTime = (appointment) => {
+  if (!appointment?.appointmentDate || !appointment?.appointmentTime) {
+    return null;
+  }
+
+  const [time, modifier] = appointment.appointmentTime.split(' ');
+  if (!time || !modifier) return null;
+
+  let [hours, minutes] = time.split(':');
+  if (typeof minutes === 'undefined') {
+    minutes = '00';
+  }
+
+  let parsedHours = parseInt(hours, 10);
+  const parsedMinutes = parseInt(minutes, 10);
+
+  if (modifier.toUpperCase() === 'PM' && parsedHours !== 12) {
+    parsedHours += 12;
+  }
+  if (modifier.toUpperCase() === 'AM' && parsedHours === 12) {
+    parsedHours = 0;
+  }
+
+  const isoString = `${appointment.appointmentDate}T${parsedHours.toString().padStart(2, '0')}:${parsedMinutes
+    .toString()
+    .padStart(2, '0')}:00`;
+  return new Date(isoString);
+};
+
 const VideoCall = () => {
   const { user } = useAuth();
+  const { appointmentId } = useParams();
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const [isCallActive, setIsCallActive] = useState(false);
@@ -32,16 +67,11 @@ const VideoCall = () => {
   const [remoteUserConnected, setRemoteUserConnected] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [callNotes, setCallNotes] = useState('');
+  const [appointmentData, setAppointmentData] = useState(null);
+  const [loadingAppointment, setLoadingAppointment] = useState(true);
+  const [appointmentError, setAppointmentError] = useState(null);
 
-  // Mock appointment data (in real app, this would come from props/route params)
-  const [appointmentData] = useState({
-    id: 'apt-123',
-    patientName: 'John Smith',
-    doctorName: 'Dr. Sarah Wilson',
-    appointmentDate: new Date(),
-    specialization: 'General Medicine',
-    reason: 'Regular checkup and health consultation'
-  });
+  const appointmentDateTime = useMemo(() => parseAppointmentDateTime(appointmentData), [appointmentData]);
 
   useEffect(() => {
     let interval;
@@ -79,6 +109,34 @@ const VideoCall = () => {
     }
   };
 
+  useEffect(() => {
+    const loadAppointment = async () => {
+      try {
+        setLoadingAppointment(true);
+        const data = await appointmentServices.getAppointmentById(appointmentId);
+        if (!data) {
+          setAppointmentError('Appointment not found or may have been removed.');
+          return;
+        }
+        setAppointmentData(data);
+      } catch (error) {
+        console.error('Error loading appointment:', error);
+        setAppointmentError('Unable to load appointment details. Please try again later.');
+      } finally {
+        setLoadingAppointment(false);
+      }
+    };
+
+    if (appointmentId) {
+      loadAppointment();
+    } else {
+      setAppointmentError('No appointment reference provided.');
+      setLoadingAppointment(false);
+    }
+  }, [appointmentId]);
+
+  const doctorName = appointmentData?.doctorName || 'Your doctor';
+
   const startCall = async () => {
     setIsConnecting(true);
     // Simulate connection delay
@@ -90,7 +148,7 @@ const VideoCall = () => {
       setChatMessages([{
         id: Date.now(),
         sender: 'system',
-        message: 'Call started',
+        message: `Connecting to ${doctorName}...`,
         timestamp: new Date()
       }]);
     }, 2000);
@@ -169,6 +227,72 @@ const VideoCall = () => {
     setShowNotes(false);
   };
 
+  if (loadingAppointment) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <LoadingSpinner text="Connecting to your doctor..." />
+      </div>
+    );
+  }
+
+  if (appointmentError) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-6 text-center">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl p-8 max-w-md">
+          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <InformationCircleIcon className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to start video call</h2>
+          <p className="text-gray-600 mb-6">{appointmentError}</p>
+          <button
+            onClick={() => navigate('/patient/appointments')}
+            className="px-5 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition"
+          >
+            Back to appointments
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!appointmentData) {
+    return null;
+  }
+
+  if (appointmentData.type && appointmentData.type !== 'video') {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-6 text-center">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md">
+          <VideoCameraIcon className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">This appointment is not a video consultation</h2>
+          <p className="text-gray-600 mb-6">
+            Please review the appointment details from your dashboard or contact support if you need assistance.
+          </p>
+          <button
+            onClick={() => navigate('/patient/appointments')}
+            className="px-5 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition"
+          >
+            View appointments
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const specialty = appointmentData.specialization || appointmentData.specialty || 'General Consultation';
+  const appointmentReason = appointmentData.reason || 'Follow-up consultation';
+  const formattedDate = appointmentDateTime
+    ? appointmentDateTime.toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    : appointmentData.appointmentDate || 'Date to be confirmed';
+  const formattedTime = appointmentDateTime
+    ? appointmentDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : appointmentData.appointmentTime || '--';
+
   if (!isCallActive && !isConnecting) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -186,18 +310,35 @@ const VideoCall = () => {
             <div className="bg-gray-50 rounded-lg p-4 text-left space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <UsersIcon className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600">With:</span>
-                <span className="font-medium">{appointmentData.doctorName}</span>
+                  <span className="text-gray-600">With:</span>
+                  <span className="font-medium">{doctorName}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <ClockIcon className="h-4 w-4 text-gray-500" />
                 <span className="text-gray-600">Time:</span>
-                <span className="font-medium">{appointmentData.appointmentDate.toLocaleTimeString()}</span>
+                  <span className="font-medium">{formattedTime}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <InformationCircleIcon className="h-4 w-4 text-gray-500" />
                 <span className="text-gray-600">Reason:</span>
-                <span className="font-medium">{appointmentData.reason}</span>
+                  <span className="font-medium">{appointmentReason}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <HeartIcon className="h-4 w-4 text-gray-500" />
+                  <span className="text-gray-600">Specialization:</span>
+                  <span className="font-medium">{specialty}</span>
+                </div>
+                {appointmentData.appointmentNumber && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <ClipboardDocumentListIcon className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-600">Appt. No.:</span>
+                    <span className="font-medium">{appointmentData.appointmentNumber}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarIcon className="h-4 w-4 text-gray-500" />
+                  <span className="text-gray-600">Date:</span>
+                  <span className="font-medium">{formattedDate}</span>
               </div>
             </div>
           </div>

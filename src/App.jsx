@@ -13,9 +13,12 @@ import SignupPage from '@/pages/auth/SignupPage';
 import PatientDashboard from '@/pages/patient/PatientDashboard';
 import PatientAppointments from '@/pages/patient/PatientAppointmentsEnhanced';
 import PatientProfile from '@/pages/patient/PatientProfile';
-import PatientHistory from '@/pages/patient/PatientHistory';
+import PatientPrescriptions from '@/pages/patient/PatientPrescriptions';
+import DebugPrescriptions from '@/pages/patient/DebugPrescriptions';
 import LocatePage from '@/pages/patient/LocatePage';
-import DoctorDashboard from '@/pages/doctor/DoctorDashboard';
+import VideoConsultation from '@/pages/patient/VideoConsultation';
+import PatientVideoAppointments from '@/pages/patient/PatientVideoAppointments';
+import DoctorDashboard from '@/pages/doctor/DoctorDashboard_Clean';
 import DoctorAppointments from '@/pages/doctor/DoctorAppointments';
 import DoctorPatients from '@/pages/doctor/DoctorPatients';
 import DoctorSchedule from '@/pages/doctor/DoctorSchedule';
@@ -23,11 +26,13 @@ import DoctorPatientRecords from '@/pages/doctor/DoctorPatientRecords';
 import DoctorProfileSetup from '@/pages/DoctorProfileSetup';
 import MedicineSellerDashboard from '@/pages/medicine-seller/MedicineSellerDashboard';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
+import MedicineShop from '@/pages/MedicineShop';
 import AppointmentBooking from '@/pages/AppointmentBooking';
 import VideoCall from '@/pages/VideoCall';
 import Chatbot from '@/pages/Chatbot';
 import ChatbotFullScreen from '@/pages/ChatbotFullScreen';
 import ChatbotNew from '@/pages/ChatbotNew';
+import AIAssistantPro from '@/pages/AIAssistantPro';
 import PricingPage from '@/pages/PricingPageClean';
 import ProfileSettings from '@/pages/ProfileSettings';
 import UserProfile from '@/pages/UserProfile';
@@ -105,9 +110,9 @@ const LayoutWrapper = ({ children, fullScreen = false }) => {
   }
   
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
       <Navbar />
-      <main className="flex-grow pt-16">
+      <main className="flex-grow pt-16 text-slate-800 dark:text-slate-100">
         {children}
       </main>
       <Footer />
@@ -200,6 +205,30 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/patient/video-appointments" 
+                  element={
+                    <ProtectedRoute>
+                      <PatientVideoAppointments />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/patient/video-consultation/:appointmentId" 
+                  element={
+                    <ProtectedRoute>
+                      <VideoConsultation />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/medicine-shop" 
+                  element={
+                    <ProtectedRoute>
+                      <MedicineShop />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/patient/profile" 
                   element={
                     <ProtectedRoute>
@@ -248,12 +277,26 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/patient/history" 
+                  path="/patient/prescriptions" 
                   element={
                     <ProtectedRoute>
-                      <PatientHistory />
+                      <PatientPrescriptions />
                     </ProtectedRoute>
                   } 
+                />
+                {/* Debug page to troubleshoot prescriptions */}
+                <Route 
+                  path="/patient/prescriptions/debug" 
+                  element={
+                    <ProtectedRoute>
+                      <DebugPrescriptions />
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* Legacy route - redirect old history to prescriptions */}
+                <Route 
+                  path="/patient/history" 
+                  element={<Navigate to="/patient/prescriptions" replace />}
                 />
                 <Route 
                   path="/medicine-seller/dashboard" 
@@ -283,7 +326,7 @@ function App() {
                   path="/chatbot" 
                   element={
                     <ProtectedRoute>
-                      <ChatbotNew />
+                      <AIAssistantPro />
                     </ProtectedRoute>
                   } 
                 />

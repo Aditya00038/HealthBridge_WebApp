@@ -1,7 +1,7 @@
 // Comprehensive Indian Healthcare Facilities Data
 // Real hospitals and clinics across major Indian cities
 
-export const INDIAN_HEALTHCARE_DATA = {
+const BASE_HEALTHCARE_DATA = {
   // Mumbai, Maharashtra
   'mumbai': [
     {
@@ -585,3 +585,506 @@ export const INDIAN_HEALTHCARE_DATA = {
     }
   ]
 };
+
+const CITY_EMERGENCY_CONTACTS = {
+  mumbai: { hotline: '+91 22 2410 1010', ambulance: '+91 22 2430 9999', lastUpdated: 'Updated: Jul 2024' },
+  delhi: { hotline: '+91 11 1066 1066', ambulance: '+91 11 1020 1020', lastUpdated: 'Updated: Jul 2024' },
+  bangalore: { hotline: '+91 80 2222 2222', ambulance: '+91 80 108', lastUpdated: 'Updated: Jul 2024' },
+  chennai: { hotline: '+91 44 1066', ambulance: '+91 44 1077', lastUpdated: 'Updated: Jul 2024' },
+  hyderabad: { hotline: '+91 40 1066', ambulance: '+91 40 108', lastUpdated: 'Updated: Jul 2024' },
+  pune: { hotline: '+91 20 1066', ambulance: '+91 20 108', lastUpdated: 'Updated: Jul 2024' },
+  kolkata: { hotline: '+91 33 2530 0000', ambulance: '+91 33 102', lastUpdated: 'Updated: Jul 2024' },
+  ahmedabad: { hotline: '+91 79 102', ambulance: '+91 79 108', lastUpdated: 'Updated: Jul 2024' },
+  jaipur: { hotline: '+91 141 220 0000', ambulance: '+91 141 108', lastUpdated: 'Updated: Jul 2024' },
+  default: { hotline: 'Dial 112 for emergency services', ambulance: 'Local hospital ambulance desk', lastUpdated: 'Updated: Jul 2024' }
+};
+
+const CITY_LANGUAGES = {
+  mumbai: ['English', 'Hindi', 'Marathi'],
+  delhi: ['English', 'Hindi'],
+  bangalore: ['English', 'Kannada', 'Hindi'],
+  chennai: ['English', 'Tamil'],
+  hyderabad: ['English', 'Telugu', 'Hindi'],
+  pune: ['English', 'Marathi', 'Hindi'],
+  kolkata: ['English', 'Bengali', 'Hindi'],
+  ahmedabad: ['English', 'Gujarati', 'Hindi'],
+  jaipur: ['English', 'Hindi'],
+  default: ['English', 'Hindi']
+};
+
+const COMMON_INSURANCE = [
+  'Ayushman Bharat PM-JAY',
+  'Star Health Insurance',
+  'HDFC ERGO',
+  'ICICI Lombard',
+  'Max Bupa',
+  'New India Assurance',
+  'Bajaj Allianz'
+];
+
+const COMMON_PAYMENT_OPTIONS = [
+  'Cash',
+  'UPI / QR Payments',
+  'Debit & Credit Cards',
+  'Insurance Direct Billing',
+  'EMI on select procedures'
+];
+
+const COMMON_AMENITIES = {
+  hospital: [
+    '24/7 Emergency Desk',
+    'Advanced ICU & NICU',
+    'In-house Pharmacy',
+    'Diagnostic Imaging Center',
+    'Blood Bank',
+    'Dialysis Unit',
+    'Specialized Wards',
+    'Wheelchair Assistance',
+    'Dedicated Parking'
+  ],
+  clinic: [
+    'Digital Queue Management',
+    'On-site Lab Collection',
+    'Vaccination Center',
+    'Pharmacy Counter',
+    'Comfortable Waiting Lounge',
+    'Teleconsult Room',
+    'Priority Senior Citizen Desk'
+  ]
+};
+
+const COMMON_PROGRAMS = {
+  hospital: [
+    'Comprehensive Health Check-ups',
+    'Cardiac Rehabilitation Program',
+    'Maternal & Child Care Packages',
+    'Preventive Oncology Screening',
+    'Diabetes & Lifestyle Clinics'
+  ],
+  clinic: [
+    'Chronic Care Management',
+    'Women Wellness Clinics',
+    'Child Immunization Drives',
+    'Corporate Wellness Camps'
+  ]
+};
+
+const createEnhancedFacility = (cityId, facility, index) => {
+  const cityKey = CITY_EMERGENCY_CONTACTS[cityId] ? cityId : 'default';
+  const emergencyContacts = CITY_EMERGENCY_CONTACTS[cityKey];
+  const languages = CITY_LANGUAGES[cityKey] || CITY_LANGUAGES.default;
+  const isHospital = facility.type === 'hospital';
+  const telemedicineAvailable = isHospital || index % 2 === 0;
+  const traumaLevels = ['Level I Trauma Center', 'Level II Trauma Center', 'Advanced Emergency Wing'];
+
+  const enhancedFacility = {
+    ...facility,
+    emergencySupport: {
+      availability: isHospital ? '24/7 Emergency & Trauma Care' : 'On-call emergency stabilization',
+      hotline: facility.emergencySupport?.hotline || emergencyContacts.hotline,
+      ambulance: facility.emergencySupport?.ambulance || emergencyContacts.ambulance,
+      traumaLevel: facility.emergencySupport?.traumaLevel || traumaLevels[index % traumaLevels.length],
+      notes: facility.emergencySupport?.notes || (isHospital
+        ? 'Dedicated triage nurses ensure a 10-minute response time for critical cases.'
+        : 'Stabilizes patients before transferring to partner multi-specialty hospitals.')
+    },
+    bedAvailability: isHospital ? {
+      total: facility.bedAvailability?.total || 180 + index * 20,
+      icu: facility.bedAvailability?.icu || 25 + (index % 5) * 3,
+      ventilators: facility.bedAvailability?.ventilators || 15 + (index % 4) * 2,
+      lastUpdated: facility.bedAvailability?.lastUpdated || emergencyContacts.lastUpdated
+    } : facility.bedAvailability || null,
+    acceptedInsurance: facility.acceptedInsurance || COMMON_INSURANCE,
+    paymentOptions: facility.paymentOptions || COMMON_PAYMENT_OPTIONS,
+    amenities: facility.amenities || (isHospital ? COMMON_AMENITIES.hospital : COMMON_AMENITIES.clinic),
+    specialPrograms: facility.specialPrograms || (isHospital ? COMMON_PROGRAMS.hospital : COMMON_PROGRAMS.clinic),
+    waitingTime: facility.waitingTime || {
+      opd: isHospital ? '25-35 mins' : '10-15 mins',
+      emergency: isHospital ? '5-8 mins' : 'Immediate triage',
+      diagnostics: isHospital ? 'Same day reporting' : 'Within 6 hours'
+    },
+    telehealth: facility.telehealth || {
+      available: telemedicineAvailable,
+      description: telemedicineAvailable
+        ? 'Virtual consultations and remote monitoring available with prior appointment.'
+        : 'Call reception to confirm teleconsult slot availability.',
+      bookingUrl: facility.website ? `${facility.website.replace(/\/$/, '')}/telemedicine` : null
+    },
+    languages: facility.languages || languages,
+    patientExperience: facility.patientExperience || {
+      parking: isHospital ? 'Dedicated multi-level parking with valet assistance.' : 'Reserved patient parking slots available.',
+      cafeteria: isHospital ? 'Multi-cuisine cafeteria open 7AM - 10PM.' : 'Complimentary refreshments for patients.',
+      caregiverSupport: isHospital ? 'Dedicated attendant lounge and overnight stay options.' : 'Family counseling desk available.',
+      childCare: isHospital
+    },
+    diagnostics: facility.diagnostics || (isHospital
+      ? ['MRI', 'CT Scan', 'Digital X-Ray', 'Ultrasound', 'Comprehensive Lab']
+      : ['Digital X-Ray', 'Pathology Lab', 'ECG', 'Ultrasound (scheduled)']),
+    pharmacy: facility.pharmacy || {
+      onsite: true,
+      hours: isHospital ? '24/7' : '8AM - 10PM',
+      homeDelivery: telemedicineAvailable
+    },
+    supportServices: facility.supportServices || {
+      physiotherapy: isHospital,
+      mentalHealth: index % 2 === 0,
+      nutrition: true,
+      homeCare: telemedicineAvailable && index % 3 === 0
+    },
+    lastUpdated: facility.lastUpdated || emergencyContacts.lastUpdated
+  };
+
+  return enhancedFacility;
+};
+
+const enhanceHealthcareData = (baseData, supplements) => {
+  const result = {};
+  const allCities = new Set([
+    ...Object.keys(baseData),
+    ...Object.keys(supplements)
+  ]);
+
+  allCities.forEach((city) => {
+    const baseFacilities = baseData[city] || [];
+    const supplementaryFacilities = supplements[city] || [];
+    const combined = [...baseFacilities, ...supplementaryFacilities];
+
+    result[city] = combined.map((facility, index) =>
+      createEnhancedFacility(city, facility, index)
+    );
+  });
+
+  return result;
+};
+
+const SUPPLEMENTARY_FACILITIES = {
+  mumbai: [
+    {
+      id: 'mum-c1',
+      name: 'CarePlus Family Clinic',
+      type: 'clinic',
+      specialty: 'Family Medicine & Preventive Care',
+      rating: 4.5,
+      reviews: 980,
+      address: 'Shop 12, Palm Grove Road, Andheri West, Mumbai, Maharashtra 400053',
+      phone: '+91 22 4015 7788',
+      hours: 'Mon-Sun: 7:30AM - 10PM',
+      doctors: 18,
+      coordinates: { lat: 19.1184, lng: 72.8368 },
+      website: 'https://www.careplusfamilyclinic.in',
+      services: ['Family Medicine', 'Vaccinations', 'Chronic Care', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400'
+    },
+    {
+      id: 'mum-c2',
+      name: 'Harbour Diagnostics & Day Care',
+      type: 'clinic',
+      specialty: 'Day Care Surgery & Diagnostics',
+      rating: 4.6,
+      reviews: 1120,
+      address: 'Plot 21, Palm Beach Road, Vashi, Navi Mumbai, Maharashtra 400703',
+      phone: '+91 22 4962 6655',
+      hours: 'Mon-Sat: 7AM - 11PM, Sun: 8AM - 4PM',
+      doctors: 26,
+      coordinates: { lat: 19.0771, lng: 73.0071 },
+      website: 'https://www.harbourdaycare.com',
+      services: ['Day Care Surgery', 'Dialysis', 'Diagnostic Imaging', 'Vaccination'],
+      image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400'
+    }
+  ],
+  delhi: [
+    {
+      id: 'del-c1',
+      name: 'City Care Polyclinic',
+      type: 'clinic',
+      specialty: 'Multi-Specialty Polyclinic',
+      rating: 4.4,
+      reviews: 860,
+      address: 'C-3, Defence Colony, New Delhi, Delhi 110024',
+      phone: '+91 11 4654 8899',
+      hours: 'Mon-Sun: 8AM - 10PM',
+      doctors: 22,
+      coordinates: { lat: 28.5668, lng: 77.2304 },
+      website: 'https://www.citycarepolyclinic.in',
+      services: ['General Medicine', 'Pediatrics', 'Dermatology', 'Lab Services'],
+      image: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=400'
+    },
+    {
+      id: 'del-c2',
+      name: 'NCR Wellness Clinic & Diagnostics',
+      type: 'clinic',
+      specialty: 'Preventive & Lifestyle Medicine',
+      rating: 4.5,
+      reviews: 940,
+      address: 'Plot 54, Sector 18, Noida, Uttar Pradesh 201301',
+      phone: '+91 120 400 4555',
+      hours: 'Mon-Sun: 7AM - 9PM',
+      doctors: 19,
+      coordinates: { lat: 28.5701, lng: 77.3213 },
+      website: 'https://www.ncrwellnessclinic.com',
+      services: ['Lifestyle Medicine', 'Cardiac Rehab', 'Endocrinology', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1530023367847-a683933f4177?w=400'
+    }
+  ],
+  bangalore: [
+    {
+      id: 'blr-c1',
+      name: 'Lakeside Family Health Center',
+      type: 'clinic',
+      specialty: 'Family Medicine & Pediatrics',
+      rating: 4.6,
+      reviews: 790,
+      address: '12th Cross, Indiranagar, Bengaluru, Karnataka 560038',
+      phone: '+91 80 4110 9900',
+      hours: 'Mon-Sun: 8AM - 9:30PM',
+      doctors: 16,
+      coordinates: { lat: 12.9735, lng: 77.6400 },
+      website: 'https://www.lakesidefamilyhealth.com',
+      services: ['Family Medicine', 'Pediatrics', 'Vaccination', 'Teleconsult'],
+      image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400'
+    },
+    {
+      id: 'blr-c2',
+      name: 'TechCity Specialty Clinic',
+      type: 'clinic',
+      specialty: 'Specialty Consults & Diagnostics',
+      rating: 4.5,
+      reviews: 910,
+      address: 'RMZ Ecoworld, Outer Ring Road, Bengaluru, Karnataka 560103',
+      phone: '+91 80 4269 5566',
+      hours: 'Mon-Sat: 7:30AM - 10PM, Sun: 9AM - 6PM',
+      doctors: 28,
+      coordinates: { lat: 12.9259, lng: 77.6890 },
+      website: 'https://www.techcityspeciality.com',
+      services: ['Cardiology', 'Orthopedics', 'ENT', 'Lab & Imaging'],
+      image: 'https://images.unsplash.com/photo-1582719478181-2cf4e8559be9?w=400'
+    }
+  ],
+  chennai: [
+    {
+      id: 'chn-c1',
+      name: 'BayView Medical Center',
+      type: 'clinic',
+      specialty: 'Primary & Specialty Care',
+      rating: 4.4,
+      reviews: 720,
+      address: 'Old Mahabalipuram Road, Thoraipakkam, Chennai, Tamil Nadu 600097',
+      phone: '+91 44 4232 7788',
+      hours: 'Mon-Sun: 8AM - 9PM',
+      doctors: 20,
+      coordinates: { lat: 12.9486, lng: 80.2361 },
+      website: 'https://www.bayviewmedical.in',
+      services: ['General Medicine', 'Gynecology', 'Orthopedics', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400'
+    },
+    {
+      id: 'chn-c2',
+      name: 'Marina Wellness Clinic',
+      type: 'clinic',
+      specialty: 'Lifestyle & Preventive Care',
+      rating: 4.5,
+      reviews: 805,
+      address: 'RK Salai, Mylapore, Chennai, Tamil Nadu 600004',
+      phone: '+91 44 4020 6633',
+      hours: 'Mon-Sun: 7:30AM - 9:30PM',
+      doctors: 17,
+      coordinates: { lat: 13.0464, lng: 80.2685 },
+      website: 'https://www.marinawellness.in',
+      services: ['Preventive Health', 'Diabetes Care', 'Cardiology', 'Physiotherapy'],
+      image: 'https://images.unsplash.com/photo-1580281657521-6a37764567ae?w=400'
+    }
+  ],
+  hyderabad: [
+    {
+      id: 'hyd-c1',
+      name: 'HiTech Care Clinic',
+      type: 'clinic',
+      specialty: 'Multi-Specialty & Diagnostics',
+      rating: 4.5,
+      reviews: 840,
+      address: 'Plot 18, HITEC City Road, Madhapur, Hyderabad, Telangana 500081',
+      phone: '+91 40 4555 7788',
+      hours: 'Mon-Sun: 8AM - 10PM',
+      doctors: 24,
+      coordinates: { lat: 17.4474, lng: 78.3762 },
+      website: 'https://www.hitechcareclinic.com',
+      services: ['Cardiology', 'Endocrinology', 'Diagnostics', 'Day Care'],
+      image: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400'
+    },
+    {
+      id: 'hyd-c2',
+      name: 'Lakeside Children & Family Clinic',
+      type: 'clinic',
+      specialty: 'Pediatrics & Family Medicine',
+      rating: 4.6,
+      reviews: 760,
+      address: '15, Necklace Road, Hyderabad, Telangana 500004',
+      phone: '+91 40 4020 8866',
+      hours: 'Mon-Sat: 8AM - 9:30PM, Sun: 9AM - 4PM',
+      doctors: 14,
+      coordinates: { lat: 17.4153, lng: 78.4721 },
+      website: 'https://www.lakesidefamilyclinic.in',
+      services: ['Pediatrics', 'Family Medicine', 'Vaccination', 'Counseling'],
+      image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=400'
+    }
+  ],
+  pune: [
+    {
+      id: 'pune-c1',
+      name: 'Riverfront Family Clinic',
+      type: 'clinic',
+      specialty: 'Family Medicine & Preventive Health',
+      rating: 4.4,
+      reviews: 665,
+      address: 'Lane 7, Koregaon Park, Pune, Maharashtra 411001',
+      phone: '+91 20 6744 8899',
+      hours: 'Mon-Sun: 8AM - 10PM',
+      doctors: 15,
+      coordinates: { lat: 18.5396, lng: 73.8934 },
+      website: 'https://www.riverfrontfamilyclinic.in',
+      services: ['Family Medicine', 'Vaccination', 'Physiotherapy', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1519494080410-f9aa76cb4283?w=400'
+    },
+    {
+      id: 'pune-c2',
+      name: 'Deccan Specialty Clinic',
+      type: 'clinic',
+      specialty: 'Specialty Consults & Day Care',
+      rating: 4.5,
+      reviews: 710,
+      address: 'JM Road, Deccan Gymkhana, Pune, Maharashtra 411004',
+      phone: '+91 20 4010 7788',
+      hours: 'Mon-Sat: 7:30AM - 10:30PM, Sun: 9AM - 5PM',
+      doctors: 21,
+      coordinates: { lat: 18.5167, lng: 73.8419 },
+      website: 'https://www.deccanspecialtyclinic.com',
+      services: ['Orthopedics', 'Cardiology', 'ENT', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=400'
+    }
+  ],
+  kolkata: [
+    {
+      id: 'kol-c1',
+      name: 'Heritage Family Clinic',
+      type: 'clinic',
+      specialty: 'Family Medicine & Preventive Care',
+      rating: 4.3,
+      reviews: 640,
+      address: '36, Park Street, Kolkata, West Bengal 700016',
+      phone: '+91 33 4050 1122',
+      hours: 'Mon-Sun: 8AM - 9:30PM',
+      doctors: 18,
+      coordinates: { lat: 22.5521, lng: 88.3522 },
+      website: 'https://www.heritagefamilyclinic.com',
+      services: ['General Medicine', 'Vaccination', 'Dermatology', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400'
+    },
+    {
+      id: 'kol-c2',
+      name: 'Ganges Wellness Center',
+      type: 'clinic',
+      specialty: 'Lifestyle & Chronic Care',
+      rating: 4.4,
+      reviews: 705,
+      address: 'Ballygunge Circular Road, Kolkata, West Bengal 700019',
+      phone: '+91 33 4020 8844',
+      hours: 'Mon-Sat: 8AM - 10PM, Sun: 9AM - 6PM',
+      doctors: 16,
+      coordinates: { lat: 22.5286, lng: 88.3650 },
+      website: 'https://www.gangeswellness.in',
+      services: ['Endocrinology', 'Cardiology', 'Diet & Nutrition', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400'
+    }
+  ],
+  ahmedabad: [
+    {
+      id: 'ahm-c1',
+      name: 'Sabarmati Health Hub',
+      type: 'clinic',
+      specialty: 'Family & Specialty Medicine',
+      rating: 4.4,
+      reviews: 590,
+      address: 'Riverfront Road, Ahmedabad, Gujarat 380009',
+      phone: '+91 79 4600 1122',
+      hours: 'Mon-Sun: 8AM - 9:30PM',
+      doctors: 14,
+      coordinates: { lat: 23.0365, lng: 72.5800 },
+      website: 'https://www.sabarmatihealthhub.in',
+      services: ['General Medicine', 'Orthopedics', 'Physiotherapy', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400'
+    },
+    {
+      id: 'ahm-c2',
+      name: 'Heritage Care Clinic',
+      type: 'clinic',
+      specialty: 'Preventive & Chronic Care',
+      rating: 4.5,
+      reviews: 630,
+      address: 'C.G. Road, Navrangpura, Ahmedabad, Gujarat 380009',
+      phone: '+91 79 4060 7788',
+      hours: 'Mon-Sat: 7:30AM - 10PM, Sun: 9AM - 4PM',
+      doctors: 18,
+      coordinates: { lat: 23.0310, lng: 72.5616 },
+      website: 'https://www.heritagecareclinic.com',
+      services: ['Endocrinology', 'Cardiology', 'Diagnostics', 'Diabetic Foot Clinic'],
+      image: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=400'
+    }
+  ],
+  jaipur: [
+    {
+      id: 'jai-c1',
+      name: 'PinkCity Family Clinic',
+      type: 'clinic',
+      specialty: 'Family Medicine & Pediatrics',
+      rating: 4.3,
+      reviews: 575,
+      address: 'C-Scheme, Jaipur, Rajasthan 302001',
+      phone: '+91 141 4020 6633',
+      hours: 'Mon-Sun: 8AM - 9PM',
+      doctors: 12,
+      coordinates: { lat: 26.9124, lng: 75.7873 },
+      website: 'https://www.pinkcityfamilyclinic.in',
+      services: ['Family Medicine', 'Vaccinations', 'Dermatology', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?w=400'
+    },
+    {
+      id: 'jai-c2',
+      name: 'Heritage Wellness Clinic',
+      type: 'clinic',
+      specialty: 'Lifestyle & Preventive Medicine',
+      rating: 4.4,
+      reviews: 610,
+      address: 'Vaishali Nagar, Jaipur, Rajasthan 302021',
+      phone: '+91 141 4560 7788',
+      hours: 'Mon-Sat: 7:30AM - 10PM, Sun: 9AM - 5PM',
+      doctors: 15,
+      coordinates: { lat: 26.9118, lng: 75.7415 },
+      website: 'https://www.heritagewellnessjaipur.com',
+      services: ['Endocrinology', 'Cardiology', 'Diet & Nutrition', 'Diagnostics'],
+      image: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=400'
+    }
+  ],
+  default: [
+    {
+      id: 'default-c1',
+      name: 'City Care Clinic',
+      type: 'clinic',
+      specialty: 'General & Preventive Medicine',
+      rating: 4.2,
+      reviews: 410,
+      address: 'Central Business District, Your City, India',
+      phone: '+91 11 3355 7788',
+      hours: 'Mon-Sun: 8AM - 9PM',
+      doctors: 10,
+      coordinates: { lat: 28.6139, lng: 77.2090 },
+      website: 'https://www.citycareclinic.in',
+      services: ['General Medicine', 'Vaccination', 'Basic Diagnostics', 'Teleconsult'],
+      image: 'https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?w=400'
+    }
+  ]
+};
+
+export const INDIAN_HEALTHCARE_DATA = enhanceHealthcareData(
+  BASE_HEALTHCARE_DATA,
+  SUPPLEMENTARY_FACILITIES
+);

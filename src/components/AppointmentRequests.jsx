@@ -14,23 +14,28 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
-const AppointmentRequests = () => {
+const AppointmentRequests = ({ onAppointmentUpdate, doctorId }) => {
   const { user } = useAuth();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
 
   useEffect(() => {
-    if (user) {
+    if (user || doctorId) {
       fetchPendingRequests();
     }
-  }, [user]);
+  }, [user, doctorId]);
 
   const fetchPendingRequests = async () => {
     try {
       setLoading(true);
-      console.log('Fetching pending appointments for doctor:', user.uid);
-      const requests = await appointmentServices.getPendingAppointments(user.uid);
+      const docId = doctorId || user?.uid;
+      if (!docId) {
+        console.error('No doctor ID available');
+        return;
+      }
+      console.log('Fetching pending appointments for doctor:', docId);
+      const requests = await appointmentServices.getPendingAppointments(docId);
       console.log('Found pending requests:', requests);
       setPendingRequests(requests);
     } catch (error) {
@@ -44,11 +49,17 @@ const AppointmentRequests = () => {
   const handleApprove = async (appointmentId) => {
     try {
       setProcessingId(appointmentId);
-      const result = await appointmentServices.approveAppointment(appointmentId, user.uid);
+      const docId = doctorId || user?.uid;
+      const result = await appointmentServices.approveAppointment(appointmentId, docId);
       toast.success('✅ Appointment approved! Patient has been notified.');
       
       // Remove from pending list
       setPendingRequests(prev => prev.filter(req => req.id !== appointmentId));
+      
+      // Notify parent component to refresh
+      if (onAppointmentUpdate) {
+        onAppointmentUpdate();
+      }
     } catch (error) {
       console.error('Error approving appointment:', error);
       toast.error('Failed to approve appointment');
@@ -60,11 +71,17 @@ const AppointmentRequests = () => {
   const handleReject = async (appointmentId, reason = '') => {
     try {
       setProcessingId(appointmentId);
-      const result = await appointmentServices.rejectAppointment(appointmentId, user.uid, reason);
+      const docId = doctorId || user?.uid;
+      const result = await appointmentServices.rejectAppointment(appointmentId, docId, reason);
       toast.success('❌ Appointment rejected. Patient has been notified.');
       
       // Remove from pending list
       setPendingRequests(prev => prev.filter(req => req.id !== appointmentId));
+      
+      // Notify parent component to refresh
+      if (onAppointmentUpdate) {
+        onAppointmentUpdate();
+      }
     } catch (error) {
       console.error('Error rejecting appointment:', error);
       toast.error('Failed to reject appointment');
@@ -73,29 +90,6 @@ const AppointmentRequests = () => {
     }
   };
 
-  // Test function to create a mock appointment
-  const createTestAppointment = async () => {
-    try {
-      const testAppointmentData = {
-        patientId: 'test-patient-123',
-        patientName: 'Test Patient',
-        doctorId: user.uid,
-        doctorName: 'Dr. ' + (user.displayName || user.email),
-        appointmentDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-        type: 'consultation',
-        time: '10:00 AM',
-        reason: 'Test appointment for debugging',
-        specialization: 'General Medicine'
-      };
-      
-      await appointmentServices.createAppointment(testAppointmentData);
-      toast.success('Test appointment created!');
-      fetchPendingRequests(); // Refresh the list
-    } catch (error) {
-      console.error('Error creating test appointment:', error);
-      toast.error('Failed to create test appointment');
-    }
-  };
 
   if (loading) {
     return (
@@ -117,12 +111,6 @@ const AppointmentRequests = () => {
           Appointment Requests
         </h2>
         <div className="flex items-center gap-3">
-          <button
-            onClick={createTestAppointment}
-            className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-700 transition-colors"
-          >
-            Create Test Request
-          </button>
           <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
             {pendingRequests.length} pending
           </span>

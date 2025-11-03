@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { doctorServices, appointmentServices } from '@/services/firebaseServices';
+import { doctorServices, appointmentServices, scheduleServices } from '@/services/firebaseServices';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import {
   CalendarIcon,
@@ -22,6 +22,133 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 
+const sanitizeText = (text = '') => text.toLowerCase().trim();
+
+const hashString = (input = '') => {
+  let hash = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36).toUpperCase().slice(0, 5);
+};
+
+const generateAppointmentCode = ({
+  appointmentType,
+  urgencyLevel,
+  doctorId,
+  appointmentDate,
+  appointmentTime,
+  patientId
+}) => {
+  if (!appointmentDate || !appointmentTime) {
+    return 'TBD';
+  }
+
+  const prefix = appointmentType === 'physical' ? 'IP' : 'VC';
+  const urgencyCode = (urgencyLevel || 'routine').charAt(0).toUpperCase();
+  const doctorSegment = (doctorId || 'GEN').toString().slice(-3).toUpperCase();
+  const base = `${appointmentDate}|${appointmentTime}|${doctorId || ''}|${patientId || ''}`;
+  const hash = hashString(base).padStart(4, '0');
+
+  return `${prefix}-${urgencyCode}${hash}-${doctorSegment}`;
+};
+
+const REASON_PROFILES = [
+  {
+    id: 'cardiac_emergency',
+    category: 'Cardiac Evaluation',
+    urgencyLevel: 'critical',
+    priorityScore: 5,
+    keywords: ['chest pain', 'pressure in chest', 'tightness', 'shortness of breath', 'breathless', 'palpitation', 'palpitations'],
+    recommendedSpecialties: ['Cardiology', 'Emergency Medicine'],
+    message: 'Chest discomfort and breathing issues require urgent evaluation. Please be prepared to seek emergency care if symptoms worsen.'
+  },
+  {
+    id: 'neurology_severe',
+    category: 'Neurological Assessment',
+    urgencyLevel: 'high',
+    priorityScore: 4,
+    keywords: ['severe headache', 'loss of consciousness', 'numbness', 'stroke', 'slurred speech'],
+    recommendedSpecialties: ['Neurology'],
+    message: 'Neurological symptoms can escalate quickly. Early assessment improves outcomes.'
+  },
+  {
+    id: 'injury',
+    category: 'Trauma & Injury',
+    urgencyLevel: 'high',
+    priorityScore: 4,
+    keywords: ['fracture', 'injury', 'accident', 'severe bleeding', 'deep cut', 'sprain'],
+    recommendedSpecialties: ['Orthopedics', 'Emergency Medicine'],
+    message: 'Acute injuries benefit from prioritized triage so that imaging and treatment can be arranged promptly.'
+  },
+  {
+    id: 'fever',
+    category: 'Infection & Fever',
+    urgencyLevel: 'medium',
+    priorityScore: 3,
+    keywords: ['high fever', 'persistent fever', 'flu symptoms', 'infection', 'viral'],
+    recommendedSpecialties: ['General Medicine', 'Internal Medicine'],
+    message: 'Fever and infection symptoms are monitored closely to prevent escalation. Stay hydrated and track temperature.'
+  },
+  {
+    id: 'checkup',
+    category: 'Routine Health Check',
+    urgencyLevel: 'routine',
+    priorityScore: 2,
+    keywords: ['health check', 'routine check', 'annual physical', 'regular checkup', 'follow up', 'follow-up'],
+    recommendedSpecialties: ['General Medicine'],
+    message: 'Routine visits help maintain long-term health. Please bring previous reports if available.'
+  },
+  {
+    id: 'skin',
+    category: 'Dermatology Review',
+    urgencyLevel: 'routine',
+    priorityScore: 2,
+    keywords: ['rash', 'skin irritation', 'eczema', 'acne', 'allergy rash'],
+    recommendedSpecialties: ['Dermatology'],
+    message: 'Skin concerns benefit from photographic documentation. Consider uploading clear images ahead of your visit.'
+  }
+];
+
+const classifyReasonForVisit = ({
+  reason,
+  appointmentType,
+  selectedDoctor,
+  appointmentDate,
+  appointmentTime,
+  patientId
+}) => {
+  const normalizedReason = sanitizeText(reason);
+  const matchedProfile = REASON_PROFILES.find((profile) =>
+    profile.keywords.some((keyword) => normalizedReason.includes(keyword))
+  );
+
+  const fallbackCategory = appointmentType === 'physical' ? 'General Consultation' : 'Virtual Follow-up';
+  const urgencyLevel = matchedProfile?.urgencyLevel || (appointmentType === 'physical' ? 'routine' : 'standard');
+  const priorityScore = matchedProfile?.priorityScore || (appointmentType === 'physical' ? 2 : 1);
+  const recommendations = matchedProfile?.recommendedSpecialties || (selectedDoctor?.specialization ? [selectedDoctor.specialization] : []);
+  const notes = matchedProfile?.message || 'Your doctor will review your concerns before the consultation.';
+  const appointmentNumber = generateAppointmentCode({
+    appointmentType,
+    urgencyLevel,
+    doctorId: selectedDoctor?.id,
+    appointmentDate,
+    appointmentTime,
+    patientId
+  });
+
+  return {
+    category: matchedProfile?.category || fallbackCategory,
+    urgencyLevel,
+    priorityScore,
+    recommendations,
+    notes,
+    appointmentNumber,
+    flaggedForPriority: urgencyLevel === 'critical' || urgencyLevel === 'high'
+  };
+};
+
 const AppointmentBooking = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -39,9 +166,72 @@ const AppointmentBooking = () => {
   const [experienceFilter, setExperienceFilter] = useState('all');
   const [ratingFilter, setRatingFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('rating');
+  const [sortBy, setSortBy] = useState('best');
   const [showFilters, setShowFilters] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [consultModeFilter, setConsultModeFilter] = useState({ physical: false, video: false });
+  const [feeRangeFilter, setFeeRangeFilter] = useState('all');
+  const [genderFilter, setGenderFilter] = useState('all');
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Count active filters for mobile indicator
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (selectedSpecialization !== 'all') count++;
+    if (experienceFilter !== 'all') count++;
+    if (ratingFilter !== 'all') count++;
+    if (locationFilter !== 'all') count++;
+    if (feeRangeFilter !== 'all') count++;
+    if (genderFilter !== 'all') count++;
+    if (consultModeFilter.physical || consultModeFilter.video) count++;
+    return count;
+  };
+
+  const renderRatingStars = (value) => {
+    const rating = Math.max(0, Math.min(5, value || 0));
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating - fullStars >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+    return (
+      <div className="flex items-center" style={{ gap: '2px' }}>
+        {/* Full stars */}
+        {[...Array(fullStars)].map((_, i) => (
+          <StarSolidIcon 
+            key={`full-${i}`} 
+            className="w-5 h-5" 
+            style={{ color: '#FBBF24', fill: '#FBBF24' }}
+          />
+        ))}
+        
+        {/* Half star */}
+        {hasHalfStar && (
+          <div key="half" className="relative" style={{ width: '20px', height: '20px' }}>
+            <StarIcon 
+              className="w-5 h-5 absolute" 
+              style={{ color: '#D1D5DB' }}
+            />
+            <div className="overflow-hidden absolute" style={{ width: '50%' }}>
+              <StarSolidIcon 
+                className="w-5 h-5" 
+                style={{ color: '#FBBF24', fill: '#FBBF24' }}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Empty stars */}
+        {[...Array(emptyStars)].map((_, i) => (
+          <StarIcon 
+            key={`empty-${i}`} 
+            className="w-5 h-5" 
+            style={{ color: '#D1D5DB' }}
+          />
+        ))}
+      </div>
+    );
+  };
 
   const specializations = [
     'all', 'General Medicine', 'Cardiology', 'Dermatology', 
@@ -64,17 +254,109 @@ const AppointmentBooking = () => {
     { value: '5', label: '5 stars only' }
   ];
 
+  const feeOptions = [
+    { value: 'all', label: 'Any Fee', min: null, max: null },
+    { value: '100-500', label: '₹100 - ₹500', min: 100, max: 500 },
+    { value: '500-1000', label: '₹500 - ₹1,000', min: 500, max: 1000 },
+    { value: '1000+', label: '₹1,000+', min: 1000, max: null }
+  ];
+
+  const genderOptions = [
+    { value: 'all', label: 'Any Gender' },
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' }
+  ];
+
+  const reasonSuggestions = [
+    {
+      id: 'cardiac',
+      label: 'Chest pain with breathlessness',
+      value: 'Experiencing chest pain and shortness of breath since last night',
+      type: 'physical'
+    },
+    {
+      id: 'injury',
+      label: 'Recent injury or fall',
+      value: 'Suffered a fall yesterday with swelling and suspected fracture in wrist',
+      type: 'physical'
+    },
+    {
+      id: 'fever',
+      label: 'High fever & chills',
+      value: 'Persistent high fever with chills and body ache for three days',
+      type: 'physical'
+    },
+    {
+      id: 'followup',
+      label: 'Follow-up consultation',
+      value: 'Follow-up visit to review ongoing treatment progress',
+      type: 'physical'
+    },
+    {
+      id: 'skin',
+      label: 'Skin irritation / rash',
+      value: 'New skin rash spreading over arms with itching for one week',
+      type: 'physical'
+    }
+  ];
+
   const sortOptions = [
+    { value: 'best', label: '⭐ Best Doctors' },
     { value: 'rating', label: 'Highest Rated' },
     { value: 'experience', label: 'Most Experienced' },
     { value: 'availability', label: 'Most Available' },
     { value: 'price', label: 'Lowest Price' }
   ];
 
-  const timeSlots = [
-    '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-    '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'
-  ];
+  // Fetch available time slots when doctor and date are selected
+  useEffect(() => {
+    if (selectedDoctor && selectedDate) {
+      fetchAvailableTimeSlots();
+    } else {
+      // Show default slots if no doctor/date selected
+      setTimeSlots([
+        '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+        '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'
+      ]);
+    }
+  }, [selectedDoctor, selectedDate]);
+
+  const fetchAvailableTimeSlots = async () => {
+    try {
+      setLoadingSlots(true);
+      const slots = await scheduleServices.getAvailableTimeSlots(
+        selectedDoctor.id,
+        selectedDate
+      );
+      
+      if (slots && slots.length > 0) {
+        // Convert 24h format to 12h AM/PM format
+        const formattedSlots = slots.map(slot => {
+          const [hours, minutes] = slot.time.split(':');
+          const hour = parseInt(hours);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+          return `${displayHour}:${minutes} ${ampm}`;
+        });
+        setTimeSlots(formattedSlots);
+      } else {
+        // No schedule set for this day, show default slots
+        setTimeSlots([
+          '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+          '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      // Fallback to default slots on error
+      setTimeSlots([
+        '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+        '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'
+      ]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
 
   useEffect(() => {
     fetchDoctors();
@@ -84,6 +366,15 @@ const AppointmentBooking = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
+
+  const reasonInsights = useMemo(() => classifyReasonForVisit({
+    reason,
+    appointmentType,
+    selectedDoctor,
+    appointmentDate: selectedDate,
+    appointmentTime: selectedTime,
+    patientId: user?.uid
+  }), [reason, appointmentType, selectedDoctor, selectedDate, selectedTime, user?.uid]);
 
   const fetchDoctors = async () => {
     try {
@@ -101,14 +392,19 @@ const AppointmentBooking = () => {
   const filteredDoctors = doctors
     .filter(doctor => {
       // Search filter
-      const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (doctor.bio || '').toLowerCase().includes(searchTerm.toLowerCase());
-      
+      const lowerSearch = searchTerm.toLowerCase();
+      const doctorSpecializations = Array.isArray(doctor.specializations) && doctor.specializations.length > 0
+        ? doctor.specializations
+        : [doctor.specialization || ''];
+      const matchesSearch = !lowerSearch ||
+        doctor.name.toLowerCase().includes(lowerSearch) ||
+        doctorSpecializations.some((spec) => spec.toLowerCase().includes(lowerSearch)) ||
+        (doctor.bio || '').toLowerCase().includes(lowerSearch);
+
       // Specialization filter
-      const matchesSpecialization = selectedSpecialization === 'all' || 
-                                   doctor.specialization === selectedSpecialization;
-      
+      const matchesSpecialization = selectedSpecialization === 'all' ||
+        doctorSpecializations.some((spec) => spec.toLowerCase().includes(selectedSpecialization.toLowerCase()));
+
       // Experience filter
       const doctorExperience = parseInt(doctor.experience) || 0;
       let matchesExperience = true;
@@ -129,15 +425,76 @@ const AppointmentBooking = () => {
       }
       
       // Location filter
-      const matchesLocation = locationFilter === 'all' || 
-                             (doctor.location || '').toLowerCase().includes(locationFilter.toLowerCase());
-      
-      return matchesSearch && matchesSpecialization && matchesExperience && matchesRating && matchesLocation;
+      const matchesLocation = locationFilter === 'all' ||
+        [doctor.location, doctor.city, doctor.state]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(locationFilter.toLowerCase()));
+
+      // Consultation mode filter
+      const activeModes = Object.entries(consultModeFilter)
+        .filter(([, isSelected]) => isSelected)
+        .map(([mode]) => mode);
+
+      const doctorModesRaw = doctor.consultationModes || doctor.consultationTypes || doctor.availableModes;
+      const doctorModes = Array.isArray(doctorModesRaw)
+        ? doctorModesRaw
+        : doctorModesRaw
+          ? [doctorModesRaw]
+          : ['video', 'physical'];
+
+      const normalizedDoctorModes = doctorModes.map((mode) => mode.toString().toLowerCase());
+      const matchesConsultMode = activeModes.length === 0 ||
+        activeModes.some((mode) => normalizedDoctorModes.includes(mode));
+
+      // Fee filter
+      const doctorFee = parseInt(doctor.consultationFee) || 0;
+      let matchesFee = true;
+      if (feeRangeFilter !== 'all') {
+        const currentFeeBand = feeOptions.find((option) => option.value === feeRangeFilter);
+        if (currentFeeBand) {
+          const { min, max } = currentFeeBand;
+          if (min !== null && doctorFee < min) matchesFee = false;
+          if (max !== null && doctorFee > max) matchesFee = false;
+        }
+      }
+
+      // Gender filter
+      const doctorGender = (doctor.gender || '').toLowerCase();
+      const matchesGender = genderFilter === 'all' || doctorGender === genderFilter;
+
+      return (
+        matchesSearch &&
+        matchesSpecialization &&
+        matchesExperience &&
+        matchesRating &&
+        matchesLocation &&
+        matchesConsultMode &&
+        matchesFee &&
+        matchesGender
+      );
     })
     .sort((a, b) => {
       // Sort logic
-      if (sortBy === 'rating') {
-        return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+      if (sortBy === 'best') {
+        // Best doctors: Weighted score based on appointments (60%) and rating (40%)
+        const getScore = (doctor) => {
+          const appointments = doctor.totalAppointments || 0;
+          const rating = doctor.averageRating || 0;
+          const reviews = doctor.totalReviews || 0;
+          
+          // Normalize appointments (assuming max ~500 appointments)
+          const normalizedAppointments = Math.min(appointments / 500, 1);
+          // Normalize rating (out of 5)
+          const normalizedRating = rating / 5;
+          // Bonus for having reviews
+          const reviewBonus = reviews > 0 ? 0.1 : 0;
+          
+          return (normalizedAppointments * 0.6) + (normalizedRating * 0.4) + reviewBonus;
+        };
+        
+        return getScore(b) - getScore(a);
+      } else if (sortBy === 'rating') {
+        return (parseFloat(b.averageRating || b.rating) || 0) - (parseFloat(a.averageRating || a.rating) || 0);
       } else if (sortBy === 'experience') {
         return (parseInt(b.experience) || 0) - (parseInt(a.experience) || 0);
       } else if (sortBy === 'price') {
@@ -157,6 +514,14 @@ const AppointmentBooking = () => {
 
     try {
       setBookingLoading(true);
+      const reasonMeta = classifyReasonForVisit({
+        reason,
+        appointmentType,
+        selectedDoctor,
+        appointmentDate: selectedDate,
+        appointmentTime: selectedTime,
+        patientId: user?.uid
+      });
       
       const appointmentData = {
         patientId: user.uid,
@@ -168,7 +533,15 @@ const AppointmentBooking = () => {
         status: 'pending',
         type: appointmentType,
         reason: reason,
-        specialization: selectedDoctor.specialization
+        specialization: selectedDoctor.specialization,
+        reasonCategory: reasonMeta.category,
+        urgencyLevel: reasonMeta.urgencyLevel,
+        priorityScore: reasonMeta.priorityScore,
+        appointmentNumber: reasonMeta.appointmentNumber,
+        recommendedSpecialties: reasonMeta.recommendations,
+        triageNotes: reasonMeta.notes,
+        isPriorityCase: reasonMeta.flaggedForPriority,
+        triageMetadata: reasonMeta
       };
 
       console.log('Creating appointment with data:', appointmentData);
@@ -217,6 +590,16 @@ const AppointmentBooking = () => {
     return maxDate.toISOString().split('T')[0];
   };
 
+  const consultModesActive = consultModeFilter.physical || consultModeFilter.video;
+  const hasActiveFilters =
+    selectedSpecialization !== 'all' ||
+    locationFilter !== 'all' ||
+    ratingFilter !== 'all' ||
+    experienceFilter !== 'all' ||
+    feeRangeFilter !== 'all' ||
+    genderFilter !== 'all' ||
+    consultModesActive;
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -254,11 +637,11 @@ const AppointmentBooking = () => {
                     />
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`
-                        flex items-center gap-1.5 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300
+                        relative flex items-center gap-1.5 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300
                         ${showFilters 
                           ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md' 
                           : 'bg-white border border-gray-300 text-gray-700 hover:border-teal-500 hover:bg-teal-50'
@@ -266,10 +649,16 @@ const AppointmentBooking = () => {
                       `}
                     >
                       <FunnelIcon className="h-4 w-4" />
-                      Filters
+                      <span className="hidden sm:inline">Filters</span>
+                      <span className="sm:hidden">Filter</span>
+                      {getActiveFilterCount() > 0 && (
+                        <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold">
+                          {getActiveFilterCount()}
+                        </span>
+                      )}
                     </button>
                     
-                    <div className="relative min-w-[180px]">
+                    <div className="relative w-full sm:w-auto sm:min-w-[200px]">
                       <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                         <AdjustmentsHorizontalIcon className="h-4 w-4 text-teal-600" />
                       </div>
@@ -398,6 +787,9 @@ const AppointmentBooking = () => {
                             setRatingFilter('all');
                             setLocationFilter('all');
                             setSortBy('rating');
+                            setConsultModeFilter({ physical: false, video: false });
+                            setFeeRangeFilter('all');
+                            setGenderFilter('all');
                           }}
                           className="text-xs text-teal-600 hover:text-teal-700 font-semibold transition-colors"
                         >
@@ -410,10 +802,10 @@ const AppointmentBooking = () => {
               </div>
 
               {/* Two Column Layout: Sidebar + Results */}
-              <div className="flex gap-6">
+              <div className="flex flex-col lg:flex-row gap-6">
                 {/* Left Sidebar: Filters */}
-                <div className="w-72 flex-shrink-0">
-                  <div className="bg-white rounded-lg border border-gray-200 p-5 sticky top-24">
+                <div className="w-full lg:w-72 lg:flex-shrink-0">
+                  <div className="bg-white rounded-lg border border-gray-200 p-5 lg:sticky lg:top-24">
                     {/* Filter Header */}
                     <div className="flex items-center justify-between mb-5">
                       <h3 className="text-lg font-bold text-gray-900">Filters</h3>
@@ -423,6 +815,9 @@ const AppointmentBooking = () => {
                           setExperienceFilter('all');
                           setRatingFilter('all');
                           setLocationFilter('all');
+                          setConsultModeFilter({ physical: false, video: false });
+                          setFeeRangeFilter('all');
+                          setGenderFilter('all');
                         }}
                         className="text-sm text-teal-600 hover:text-teal-700 font-semibold"
                       >
@@ -431,7 +826,7 @@ const AppointmentBooking = () => {
                     </div>
 
                     {/* Active Filters Display */}
-                    {(selectedSpecialization !== 'all' || locationFilter !== 'all') && (
+                    {hasActiveFilters && (
                       <div className="mb-4 pb-4 border-b border-gray-200">
                         <div className="flex flex-wrap gap-2">
                           {selectedSpecialization !== 'all' && (
@@ -454,6 +849,72 @@ const AppointmentBooking = () => {
                               </button>
                             </span>
                           )}
+                          {ratingFilter !== 'all' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+                              Rating {ratingOptions.find((option) => option.value === ratingFilter)?.label || ratingFilter}
+                              <button onClick={() => setRatingFilter('all')} className="hover:bg-amber-200 rounded-full p-0.5">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {experienceFilter !== 'all' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                              Experience {experienceOptions.find((option) => option.value === experienceFilter)?.label || experienceFilter}
+                              <button onClick={() => setExperienceFilter('all')} className="hover:bg-blue-200 rounded-full p-0.5">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {feeRangeFilter !== 'all' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                              Fee {feeOptions.find((option) => option.value === feeRangeFilter)?.label || feeRangeFilter}
+                              <button onClick={() => setFeeRangeFilter('all')} className="hover:bg-purple-200 rounded-full p-0.5">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {genderFilter !== 'all' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-rose-100 text-rose-700 rounded-full text-sm font-medium">
+                              {genderOptions.find((option) => option.value === genderFilter)?.label || genderFilter}
+                              <button onClick={() => setGenderFilter('all')} className="hover:bg-rose-200 rounded-full p-0.5">
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {consultModeFilter.physical && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
+                              In-person
+                              <button
+                                onClick={() => setConsultModeFilter((prev) => ({ ...prev, physical: false }))}
+                                className="hover:bg-slate-200 rounded-full p-0.5"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {consultModeFilter.video && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-sky-100 text-sky-700 rounded-full text-sm font-medium">
+                              Video consult
+                              <button
+                                onClick={() => setConsultModeFilter((prev) => ({ ...prev, video: false }))}
+                                className="hover:bg-sky-200 rounded-full p-0.5"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
                         </div>
                       </div>
                     )}
@@ -465,7 +926,13 @@ const AppointmentBooking = () => {
                         <label className="flex items-center cursor-pointer group">
                           <input
                             type="checkbox"
-                            checked={true}
+                            checked={consultModeFilter.physical}
+                            onChange={() =>
+                              setConsultModeFilter((prev) => ({
+                                ...prev,
+                                physical: !prev.physical
+                              }))
+                            }
                             className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                           />
                           <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Hospital Visit</span>
@@ -473,6 +940,13 @@ const AppointmentBooking = () => {
                         <label className="flex items-center cursor-pointer group">
                           <input
                             type="checkbox"
+                            checked={consultModeFilter.video}
+                            onChange={() =>
+                              setConsultModeFilter((prev) => ({
+                                ...prev,
+                                video: !prev.video
+                              }))
+                            }
                             className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
                           />
                           <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Online Consult</span>
@@ -498,31 +972,51 @@ const AppointmentBooking = () => {
                       </div>
                     </div>
 
+                    {/* Rating Filter */}
+                    <div className="mb-5 pb-5 border-b border-gray-200">
+                      <h4 className="font-semibold text-gray-900 mb-3 text-sm">Rating</h4>
+                      <div className="space-y-2">
+                        {ratingOptions
+                          .filter((option) => option.value !== 'all')
+                          .map((option) => (
+                            <label key={option.value} className="flex items-center cursor-pointer group">
+                              <input
+                                type="checkbox"
+                                checked={ratingFilter === option.value}
+                                onChange={() =>
+                                  setRatingFilter((prev) =>
+                                    prev === option.value ? 'all' : option.value
+                                  )
+                                }
+                                className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">{option.label}</span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
                     {/* Fees Filter */}
                     <div className="mb-5 pb-5 border-b border-gray-200">
                       <h4 className="font-semibold text-gray-900 mb-3 text-sm">Fees (In Rupees)</h4>
                       <div className="space-y-2">
-                        <label className="flex items-center cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">100-500</span>
-                        </label>
-                        <label className="flex items-center cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">500-1000</span>
-                        </label>
-                        <label className="flex items-center cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">1000+</span>
-                        </label>
+                        {feeOptions
+                          .filter((option) => option.value !== 'all')
+                          .map((option) => (
+                            <label key={option.value} className="flex items-center cursor-pointer group">
+                              <input
+                                type="checkbox"
+                                checked={feeRangeFilter === option.value}
+                                onChange={() =>
+                                  setFeeRangeFilter((prev) =>
+                                    prev === option.value ? 'all' : option.value
+                                  )
+                                }
+                                className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">{option.label}</span>
+                            </label>
+                          ))}
                       </div>
                     </div>
 
@@ -530,20 +1024,23 @@ const AppointmentBooking = () => {
                     <div className="mb-3">
                       <h4 className="font-semibold text-gray-900 mb-3 text-sm">Gender</h4>
                       <div className="space-y-2">
-                        <label className="flex items-center cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Male</span>
-                        </label>
-                        <label className="flex items-center cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">Female</span>
-                        </label>
+                        {genderOptions
+                          .filter((option) => option.value !== 'all')
+                          .map((option) => (
+                            <label key={option.value} className="flex items-center cursor-pointer group">
+                              <input
+                                type="checkbox"
+                                checked={genderFilter === option.value}
+                                onChange={() =>
+                                  setGenderFilter((prev) =>
+                                    prev === option.value ? 'all' : option.value
+                                  )
+                                }
+                                className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                              />
+                              <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900">{option.label}</span>
+                            </label>
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -597,7 +1094,7 @@ const AppointmentBooking = () => {
                     className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-300 p-5 mb-4"
                   >
                     {/* Horizontal Layout */}
-                    <div className="flex gap-5">
+                    <div className="flex flex-col md:flex-row gap-5">
                       {/* Left: Doctor Photo */}
                       <div className="flex-shrink-0">
                         <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
@@ -617,8 +1114,8 @@ const AppointmentBooking = () => {
 
                       {/* Middle: Doctor Info */}
                       <div className="flex-1 min-w-0">
-                        {/* Doctor Name with Verification */}
-                        <div className="flex items-center gap-2 mb-1">
+                        {/* Doctor Name with Verification & Badges */}
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="text-lg font-semibold text-gray-900 hover:text-teal-600 cursor-pointer">
                             {doctor.name}
                           </h3>
@@ -627,35 +1124,68 @@ const AppointmentBooking = () => {
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
                           )}
+                          {/* Best Doctor Badge - Top by appointments & rating */}
+                          {doctor.isBestDoctor && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-sm">
+                              ⭐ BEST
+                            </span>
+                          )}
+                          {/* Top Rated Badge - High rating + sufficient reviews */}
+                          {!doctor.isBestDoctor && doctor.averageRating >= 4.5 && doctor.totalReviews >= 10 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-sm">
+                              Top Rated
+                            </span>
+                          )}
+                          {/* Experienced Badge */}
+                          {doctor.experience >= 10 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              Experienced
+                            </span>
+                          )}
                         </div>
                         
                         {/* Specialization */}
                         <p className="text-gray-600 text-base mb-2">{doctor.specialization}</p>
                         
                         {/* Experience & Qualifications */}
-                        <p className="text-sm text-blue-600 font-medium mb-2">
-                          {doctor.experience || '5'} YEARS • MBBS, MD, {doctor.degree || 'DM'}
-                        </p>
+                        {doctor.experience && (
+                          <p className="text-sm text-blue-600 font-medium mb-2">
+                            {doctor.experience} YEARS{doctor.qualifications ? ` • ${doctor.qualifications}` : ''}
+                          </p>
+                        )}
 
-                        {/* Distance & Location */}
-                        <p className="text-sm text-gray-600 mb-2">
-                          5 KM • {doctor.location || 'Pune'}
-                        </p>
+                        {/* Hospital/Clinic Address - Only show if provided */}
+                        {doctor.hospital && (
+                          <p className="text-sm text-gray-700 mb-2">
+                            📍 {doctor.hospital}
+                            {doctor.area && `, ${doctor.area}`}
+                            {doctor.city && `, ${doctor.city}`}
+                          </p>
+                        )}
 
-                        {/* Hospital/Clinic */}
-                        <p className="text-sm text-gray-700 mb-3">
-                          {doctor.hospital || 'Apollo Clinic'}, {doctor.area || 'Viman Nagar'}, Pune
-                        </p>
-
-                        {/* Rating */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center bg-green-600 text-white px-2 py-1 rounded text-sm font-bold">
-                            <span className="mr-1">👍</span>
-                            {Math.round((doctor.rating || 4.5) * 20)}%
-                          </div>
-                          <span className="text-sm text-gray-600">
-                            ({doctor.reviewCount || 75}+ Patients)
-                          </span>
+                        {/* Rating & Stats - Only show real data */}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {(doctor.averageRating || doctor.totalReviews) && (
+                            <div className="flex items-center gap-2">
+                              {renderRatingStars(doctor.averageRating || 0)}
+                              <span className="text-sm font-semibold text-gray-900">
+                                {(doctor.averageRating || 0).toFixed(1)}
+                              </span>
+                              <span className="text-sm text-gray-600">
+                                ({doctor.totalReviews || 0} {doctor.totalReviews === 1 ? 'review' : 'reviews'})
+                              </span>
+                            </div>
+                          )}
+                          {doctor.totalAppointments > 0 && (
+                            <span className="text-sm text-gray-600">
+                              • {doctor.totalAppointments} {doctor.totalAppointments === 1 ? 'patient' : 'patients'} treated
+                            </span>
+                          )}
+                          {!doctor.averageRating && !doctor.totalReviews && !doctor.totalAppointments && (
+                            <span className="text-sm text-gray-500 italic">
+                              New doctor - No reviews yet
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -666,20 +1196,33 @@ const AppointmentBooking = () => {
                           <p className="text-2xl font-bold text-gray-900">₹{doctor.consultationFee || 700}</p>
                         </div>
 
-                        {/* Visit Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedDoctor(doctor);
-                            setStep(2);
-                          }}
-                          className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold text-sm transition-all duration-300 shadow-sm hover:shadow-md"
-                        >
-                          <div className="font-bold">Visit Doctor</div>
-                          <div className="text-xs font-normal opacity-90">
-                            Available in {doctor.availableIn || '3 days'}
-                          </div>
-                        </button>
+                        {/* Action Buttons */}
+                        <div className="space-y-2 w-full">
+                          {/* View Reviews Button */}
+                          <Link
+                            to={`/doctor/${doctor.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full px-4 py-2 bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-50 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2"
+                          >
+                            <StarIcon className="w-4 h-4" />
+                            View Reviews
+                          </Link>
+
+                          {/* Visit Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDoctor(doctor);
+                              setStep(2);
+                            }}
+                            className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-semibold text-sm transition-all duration-300 shadow-sm hover:shadow-md"
+                          >
+                            <div className="font-bold">Visit Doctor</div>
+                            <div className="text-xs font-normal opacity-90">
+                              Available in {doctor.availableIn || '3 days'}
+                            </div>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -767,24 +1310,44 @@ const AppointmentBooking = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <ClockIcon className="h-4 w-4 inline mr-1" />
                     Available Time Slots
+                    {selectedDoctor && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        (Based on doctor's schedule)
+                      </span>
+                    )}
                   </label>
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                    {timeSlots.map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => setSelectedTime(time)}
-                        className={`
-                          p-2 text-sm border rounded-lg transition-all
-                          ${selectedTime === time 
-                            ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                            : 'border-gray-300 hover:border-gray-400'
-                          }
-                        `}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
+                  {loadingSlots ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-3 text-gray-600">Loading available slots...</span>
+                    </div>
+                  ) : timeSlots.length > 0 ? (
+                    <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                      {timeSlots.map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => setSelectedTime(time)}
+                          className={`
+                            p-2 text-sm border rounded-lg transition-all
+                            ${selectedTime === time 
+                              ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                              : 'border-gray-300 hover:border-gray-400'
+                            }
+                          `}
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <ClockIcon className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
+                      <p className="text-yellow-700 font-medium">No available slots for this date</p>
+                      <p className="text-yellow-600 text-sm mt-1">
+                        The doctor hasn't set their schedule for this day yet.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -817,7 +1380,7 @@ const AppointmentBooking = () => {
             >
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Appointment Details</h2>
               
-              {/* Appointment Summary */}
+              {/* Appointment Summary with Patient Info */}
               <div className="bg-gray-50 rounded-lg p-6 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Appointment Summary</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -853,6 +1416,14 @@ const AppointmentBooking = () => {
                       )}
                     </p>
                   </div>
+                  <div>
+                    <span className="text-gray-600">Patient Name:</span>
+                    <p className="font-medium">{user?.displayName || user?.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Patient Email:</span>
+                    <p className="font-medium">{user?.email}</p>
+                  </div>
                 </div>
               </div>
 
@@ -861,6 +1432,23 @@ const AppointmentBooking = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Reason for Visit *
                 </label>
+                {appointmentType === 'physical' && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Quick Fill Suggestions</p>
+                    <div className="flex flex-wrap gap-2">
+                      {reasonSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          type="button"
+                          onClick={() => setReason(suggestion.value)}
+                          className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold hover:bg-gray-200 transition"
+                        >
+                          {suggestion.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -868,6 +1456,41 @@ const AppointmentBooking = () => {
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {appointmentType === 'physical' && (
+                  <div className="mt-4 bg-gradient-to-br from-teal-50 via-white to-sky-50 border border-teal-100 rounded-xl p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase">Triage summary</p>
+                        <h4 className="text-lg font-bold text-gray-900">{reasonInsights.category}</h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-teal-200 text-teal-700">
+                          Urgency: {reasonInsights.urgencyLevel.charAt(0).toUpperCase() + reasonInsights.urgencyLevel.slice(1)}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-blue-200 text-blue-700">
+                          Priority Score: {reasonInsights.priorityScore}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 mb-3">{reasonInsights.notes}</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {reasonInsights.recommendations.map((specialist) => (
+                        <span key={specialist} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-semibold text-gray-700">
+                          Suggested: {specialist}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
+                      <div>
+                        Appointment number preview:{' '}
+                        <span className="font-semibold text-gray-900">{reasonInsights.appointmentNumber}</span>
+                      </div>
+                      {reasonInsights.flaggedForPriority && (
+                        <span className="text-rose-600 font-semibold">This visit will be flagged for priority triage.</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between">
@@ -913,6 +1536,20 @@ const AppointmentBooking = () => {
                 {new Date(selectedDate).toLocaleDateString()} at {selectedTime}.
                 You will receive a confirmation email shortly.
               </p>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 text-left mb-8">
+                <p className="text-sm font-semibold text-blue-700 uppercase mb-1">Triage Details</p>
+                <p className="text-lg font-bold text-gray-900 mb-1">Appointment Number: {reasonInsights.appointmentNumber}</p>
+                <p className="text-sm text-gray-700 mb-1">
+                  Urgency Level: <span className="font-semibold text-gray-900">{reasonInsights.urgencyLevel}</span>
+                  {' '}• Priority Score: <span className="font-semibold text-gray-900">{reasonInsights.priorityScore}</span>
+                </p>
+                <p className="text-sm text-gray-600">{reasonInsights.notes}</p>
+                <div className="mt-4">
+                  <span className="text-gray-600 font-semibold">Patient Name:</span> <span className="text-gray-900">{user?.displayName || user?.email}</span><br />
+                  <span className="text-gray-600 font-semibold">Patient Email:</span> <span className="text-gray-900">{user?.email}</span>
+                </div>
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
