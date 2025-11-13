@@ -24,7 +24,8 @@ import {
   getFacilitiesByCity, 
   getAvailableCities, 
   getUserLocation, 
-  calculateDistance 
+  calculateDistance,
+  searchGooglePlaces
 } from '@/services/locationServices';
 
 const LocatePage = () => {
@@ -57,14 +58,43 @@ const LocatePage = () => {
 
   const loadFacilities = () => {
     setLoading(true);
-    const cityData = getFacilitiesByCity(selectedCity);
-    setFacilities(cityData);
-    
-    if (userLocation) {
-      calculateDistances(userLocation);
-    }
-    
-    setLoading(false);
+    (async () => {
+      try {
+        // If selectedType is one of the camp types, search Google Places for camp keywords
+        if (selectedType && selectedType !== 'all' && campKeywords[selectedType]) {
+          const cityDataForCoords = getFacilitiesByCity(selectedCity);
+          const loc = userLocation || (cityDataForCoords && cityDataForCoords[0] && cityDataForCoords[0].coordinates) || null;
+          if (!loc) {
+            // Fallback: load city data but exclude hospitals
+            const cityDataFallback = getFacilitiesByCity(selectedCity).filter(f => f.type !== 'hospital');
+            setFacilities(cityDataFallback);
+            setLoading(false);
+            return;
+          }
+
+          // Use API to find nearby camp events (8km radius)
+          const results = await searchGooglePlaces(campKeywords[selectedType], loc, 8000, selectedType);
+          // Exclude any places that are hospitals
+          const filtered = results.filter(r => !(r.rawTypes && r.rawTypes.includes('hospital')));
+          setFacilities(filtered);
+          setLoading(false);
+          return;
+        }
+
+        // Default: load local city healthcare facilities but exclude hospitals
+        const cityData = getFacilitiesByCity(selectedCity).filter(f => f.type !== 'hospital');
+        setFacilities(cityData);
+
+        if (userLocation) {
+          calculateDistances(userLocation);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading facilities:', err);
+        setLoading(false);
+      }
+    })();
   };
 
   const calculateDistances = (location) => {
@@ -222,19 +252,36 @@ const LocatePage = () => {
     }
   ]; // End of old mock data - now removed
 
+  // Updated types: focus on health-related camps and clinics, remove hospitals
   const types = [
     { id: 'all', name: 'All', icon: MapPinIcon, color: 'gray' },
-    { id: 'doctor', name: 'Doctors', icon: UserGroupIcon, color: 'blue' },
-    { id: 'clinic', name: 'Clinics', icon: BuildingOfficeIcon, color: 'green' },
-    { id: 'hospital', name: 'Hospitals', icon: HeartIcon, color: 'red' }
+    { id: 'blood_donation', name: 'Blood Donation', icon: UserGroupIcon, color: 'red' },
+    { id: 'dental_camp', name: 'Dental Camps', icon: BuildingOfficeIcon, color: 'orange' },
+    { id: 'treatment_camp', name: 'Treatment Camps', icon: ShieldCheckIcon, color: 'emerald' },
+    { id: 'vaccination', name: 'Vaccination Camps', icon: LifebuoyIcon, color: 'purple' },
+    { id: 'eye_camp', name: 'Eye Camps', icon: SparklesIcon, color: 'teal' },
+    { id: 'clinic', name: 'Clinics', icon: BuildingOfficeIcon, color: 'green' }
   ];
 
-  const filteredFacilities = facilities.filter(facility => {
-    const matchesSearch = facility.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         facility.specialty.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === 'all' || facility.type === selectedType;
-    return matchesSearch && matchesType;
-  });
+  // Map camp types to Google Places keywords
+  const campKeywords = {
+    blood_donation: 'blood donation camp',
+    dental_camp: 'dental camp',
+    treatment_camp: 'health camp',
+    vaccination: 'vaccination camp',
+    eye_camp: 'eye camp'
+  };
+
+  // Exclude hospitals from results and support camp categories
+  const filteredFacilities = facilities
+    .filter(facility => facility.type !== 'hospital')
+    .filter(facility => {
+      const name = (facility.name || '').toString().toLowerCase();
+      const specialty = (facility.specialty || '').toString().toLowerCase();
+      const matchesSearch = name.includes(searchQuery.toLowerCase()) || specialty.includes(searchQuery.toLowerCase());
+      const matchesType = selectedType === 'all' || facility.type === selectedType;
+      return matchesSearch && matchesType;
+    });
 
   const renderStars = (rating) => {
     const stars = [];
@@ -268,6 +315,16 @@ const LocatePage = () => {
         return 'from-green-500 to-green-600';
       case 'hospital':
         return 'from-red-500 to-red-600';
+      case 'blood_donation':
+        return 'from-red-400 to-red-600';
+      case 'dental_camp':
+        return 'from-orange-400 to-orange-600';
+      case 'treatment_camp':
+        return 'from-emerald-400 to-emerald-600';
+      case 'vaccination':
+        return 'from-purple-400 to-purple-600';
+      case 'eye_camp':
+        return 'from-teal-400 to-teal-600';
       default:
         return 'from-gray-500 to-gray-600';
     }
@@ -281,6 +338,16 @@ const LocatePage = () => {
         return BuildingOfficeIcon;
       case 'hospital':
         return HeartIcon;
+      case 'blood_donation':
+        return UserGroupIcon;
+      case 'dental_camp':
+        return BuildingOfficeIcon;
+      case 'treatment_camp':
+        return ShieldCheckIcon;
+      case 'vaccination':
+        return LifebuoyIcon;
+      case 'eye_camp':
+        return SparklesIcon;
       default:
         return MapPinIcon;
     }
@@ -323,10 +390,10 @@ const LocatePage = () => {
           className="mb-6"
         >
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Locate Healthcare Facilities
+            Locate Health Camps &amp; Events
           </h1>
           <p className="text-sm text-gray-600">
-            Find nearby doctors, clinics, and hospitals in your area
+            Find nearby blood donation camps, dental camps, vaccination drives and other health events. Hospital locations are hidden here.
           </p>
         </motion.div>
 
@@ -408,7 +475,7 @@ const LocatePage = () => {
         {/* Results Count */}
         <div className="mb-4">
           <p className="text-gray-700 text-sm font-semibold">
-            Found <span className="text-teal-600">{filteredFacilities.length}</span> healthcare facilities
+            Found <span className="text-teal-600">{filteredFacilities.length}</span> health camps &amp; events
           </p>
         </div>
 
@@ -434,7 +501,7 @@ const LocatePage = () => {
                   />
                   <div className="absolute top-3 left-3 px-3 py-1 rounded-lg bg-teal-600 text-white text-xs font-bold flex items-center gap-1 shadow-md">
                     <TypeIcon className="w-3 h-3" />
-                    {facility.type.charAt(0).toUpperCase() + facility.type.slice(1)}
+                    {formatLabel(facility.type)}
                   </div>
                   <div className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-white text-gray-900 text-xs font-bold flex items-center gap-1 shadow-md">
                     <MapPinIcon className="w-3 h-3 text-teal-600" />
@@ -588,7 +655,7 @@ const LocatePage = () => {
                 <div className="absolute bottom-4 left-6 right-6">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="px-3 py-1 rounded-lg bg-teal-600 text-white text-sm font-bold flex items-center gap-1">
-                      {selectedFacilityDetails.type.charAt(0).toUpperCase() + selectedFacilityDetails.type.slice(1)}
+                      {formatLabel(selectedFacilityDetails.type)}
                     </span>
                     {selectedFacilityDetails.distance && (
                       <span className="px-3 py-1 rounded-lg bg-white text-gray-900 text-sm font-bold flex items-center gap-1">

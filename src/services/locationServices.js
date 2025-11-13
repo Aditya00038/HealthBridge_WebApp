@@ -114,25 +114,27 @@ export const fetchHealthcareFacilities = async (options = {}) => {
  * @param {number} radius - Search radius in meters
  * @returns {Promise<Array>}
  */
-export const searchGooglePlaces = async (query, location, radius = 5000) => {
+export const searchGooglePlaces = async (query, location, radius = 5000, category = null) => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  
+
   if (!apiKey) {
     console.warn('Google Maps API key not configured');
     return [];
   }
-  
+
   try {
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&radius=${radius}&type=hospital|doctor&keyword=${encodeURIComponent(query)}&key=${apiKey}`;
-    
+    // Use a generic establishment type and rely on keyword to find camps/events
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&radius=${radius}&type=establishment&keyword=${encodeURIComponent(query)}&key=${apiKey}`;
+
     const response = await fetch(url);
     const data = await response.json();
-    
+
     if (data.status === 'OK') {
       return data.results.map(place => ({
         id: place.place_id,
         name: place.name,
-        type: getTypeFromPlaceTypes(place.types),
+        // If caller provided a category (e.g. 'blood_donation'), use that as the type so UI can group.
+        type: category || getTypeFromPlaceTypes(place.types),
         address: place.vicinity,
         rating: place.rating || 0,
         reviews: place.user_ratings_total || 0,
@@ -140,13 +142,14 @@ export const searchGooglePlaces = async (query, location, radius = 5000) => {
           lat: place.geometry.location.lat,
           lng: place.geometry.location.lng
         },
-        photo: place.photos?.[0]?.photo_reference 
+        photo: place.photos?.[0]?.photo_reference
           ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`
           : null,
-        isOpen: place.opening_hours?.open_now
+        isOpen: place.opening_hours?.open_now,
+        rawTypes: place.types || []
       }));
     }
-    
+
     return [];
   } catch (error) {
     console.error('Error searching Google Places:', error);
