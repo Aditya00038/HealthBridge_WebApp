@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   NewspaperIcon,
   MagnifyingGlassIcon,
@@ -8,8 +8,12 @@ import {
   HomeIcon,
   UserGroupIcon,
   BanknotesIcon,
-  SparklesIcon
+  SparklesIcon,
+  ArrowTopRightOnSquareIcon,
+  CalendarIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 
 const governmentSchemes = [
   {
@@ -116,45 +120,112 @@ const governmentSchemes = [
   }
 ];
 
-const healthNews = [
-  {
-    id: 1,
-    title: 'India Launches Universal Immunization Programme Expansion',
-    category: 'Vaccination',
-    date: '2024-01-15',
-    summary: 'Government expands vaccination coverage to include newer vaccines for children and adults.',
-    image: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400&h=250&fit=crop'
-  },
-  {
-    id: 2,
-    title: 'New Guidelines for Diabetes Management Released',
-    category: 'Disease Management',
-    date: '2024-01-10',
-    summary: 'Health Ministry releases comprehensive guidelines for diabetes prevention and management.',
-    image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=250&fit=crop'
-  },
-  {
-    id: 3,
-    title: 'Mental Health Awareness Month: Free Counseling Services',
-    category: 'Mental Health',
-    date: '2024-01-05',
-    summary: 'Free mental health counseling services available at all government hospitals this month.',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=250&fit=crop'
-  },
-  {
-    id: 4,
-    title: 'Nationwide Eye Health Screening Campaign',
-    category: 'Prevention',
-    date: '2023-12-28',
-    summary: 'Free eye check-ups and cataract surgeries being conducted across rural areas.',
-    image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=250&fit=crop'
-  }
-];
-
 const HealthNews = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeTab, setActiveTab] = useState('schemes'); // schemes or news
+  const [activeTab, setActiveTab] = useState('schemes');
+  const [newsArticles, setNewsArticles] = useState([]);
+  const [loadingNews, setLoadingNews] = useState(false);
+  const [newsPage, setNewsPage] = useState(1);
+  const [selectedNewsCategory, setSelectedNewsCategory] = useState('health');
+
+  // Fetch real health news from NewsAPI
+  useEffect(() => {
+    if (activeTab === 'news') {
+      fetchHealthNews();
+    }
+  }, [activeTab, selectedNewsCategory, newsPage]);
+
+  const fetchHealthNews = async () => {
+    setLoadingNews(true);
+    try {
+      // Check if API key is available
+      const apiKey = import.meta.env.VITE_NEWS_API_KEY;
+      
+      if (!apiKey) {
+        // Fallback to demo data if no API key
+        setNewsArticles([
+          {
+            title: 'India Launches Universal Immunization Programme Expansion',
+            description: 'Government expands vaccination coverage to include newer vaccines for children and adults across the country.',
+            url: '#',
+            urlToImage: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400&h=250&fit=crop',
+            publishedAt: '2024-01-15T10:00:00Z',
+            source: { name: 'Health Ministry' }
+          },
+          {
+            title: 'New Guidelines for Diabetes Management Released',
+            description: 'Health Ministry releases comprehensive guidelines for diabetes prevention and management in India.',
+            url: '#',
+            urlToImage: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=250&fit=crop',
+            publishedAt: '2024-01-10T10:00:00Z',
+            source: { name: 'Medical Journal' }
+          },
+          {
+            title: 'Mental Health Awareness Month: Free Counseling Services',
+            description: 'Free mental health counseling services available at all government hospitals this month.',
+            url: '#',
+            urlToImage: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=250&fit=crop',
+            publishedAt: '2024-01-05T10:00:00Z',
+            source: { name: 'Health Department' }
+          },
+          {
+            title: 'Nationwide Eye Health Screening Campaign',
+            description: 'Free eye check-ups and cataract surgeries being conducted across rural areas of India.',
+            url: '#',
+            urlToImage: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=250&fit=crop',
+            publishedAt: '2023-12-28T10:00:00Z',
+            source: { name: 'Eye Care Foundation' }
+          },
+          {
+            title: 'Ayushman Bharat Digital Mission Expands Coverage',
+            description: 'Digital health IDs now available for all citizens to access medical records seamlessly.',
+            url: '#',
+            urlToImage: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=250&fit=crop',
+            publishedAt: '2023-12-20T10:00:00Z',
+            source: { name: 'Digital Health Authority' }
+          },
+          {
+            title: 'India Reports Significant Decline in Tuberculosis Cases',
+            description: 'TB cases drop by 20% following nationwide awareness and treatment programs.',
+            url: '#',
+            urlToImage: 'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=400&h=250&fit=crop',
+            publishedAt: '2023-12-15T10:00:00Z',
+            source: { name: 'WHO India' }
+          }
+        ]);
+        setLoadingNews(false);
+        return;
+      }
+
+      // Fetch from NewsAPI
+      const response = await fetch(
+        `https://newsapi.org/v2/everything?q=${selectedNewsCategory}+India&language=en&sortBy=publishedAt&pageSize=12&page=${newsPage}&apiKey=${apiKey}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch news');
+      }
+      
+      const data = await response.json();
+      setNewsArticles(data.articles || []);
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      toast.error('Failed to load news. Using demo articles.');
+      // Keep existing demo articles
+    } finally {
+      setLoadingNews(false);
+    }
+  };
+
+  const newsCategories = [
+    { id: 'health', name: 'Health' },
+    { id: 'medical', name: 'Medical' },
+    { id: 'healthcare', name: 'Healthcare' },
+    { id: 'wellness', name: 'Wellness' },
+    { id: 'mental+health', name: 'Mental Health' },
+    { id: 'vaccination', name: 'Vaccination' }
+  ];
 
   const categories = [
     { id: 'all', name: 'All', icon: SparklesIcon },
@@ -171,10 +242,23 @@ const HealthNews = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const filteredNews = healthNews.filter(news =>
-    news.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    news.summary.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredNews = newsArticles.filter(article =>
+    article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    article.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 py-8 px-4">
@@ -234,8 +318,8 @@ const HealthNews = () => {
           </div>
         </div>
 
-        {/* Category Filter (only for schemes) */}
-        {activeTab === 'schemes' && (
+        {/* Category Filter */}
+        {activeTab === 'schemes' ? (
           <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => {
@@ -255,6 +339,24 @@ const HealthNews = () => {
                   </button>
                 );
               })}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
+            <div className="flex flex-wrap gap-2">
+              {newsCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedNewsCategory(category.id)}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                    selectedNewsCategory === category.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -328,36 +430,98 @@ const HealthNews = () => {
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredNews.map((news, index) => (
-              <motion.div
-                key={news.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-              >
-                <img
-                  src={news.image}
-                  alt={news.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
-                      {news.category}
+          <>
+            {loadingNews ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : (
+              <>
+                <AnimatePresence mode="wait">
+                  <motion.div 
+                    key={selectedNewsCategory}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  >
+                    {filteredNews.map((article, index) => (
+                      <motion.div
+                        key={article.url || index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all group"
+                      >
+                        {article.urlToImage && (
+                          <div className="relative h-48 overflow-hidden">
+                            <img
+                              src={article.urlToImage}
+                              alt={article.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.target.src = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=250&fit=crop';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                          </div>
+                        )}
+                        <div className="p-5">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold flex items-center gap-1">
+                              <NewspaperIcon className="w-3 h-3" />
+                              {article.source?.name || 'News'}
+                            </span>
+                            <span className="text-gray-500 text-xs flex items-center gap-1">
+                              <CalendarIcon className="w-3 h-3" />
+                              {formatDate(article.publishedAt)}
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                            {article.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                            {article.description || 'No description available.'}
+                          </p>
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
+                          >
+                            Read Full Article
+                            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Pagination */}
+                {filteredNews.length > 0 && (
+                  <div className="flex justify-center gap-3 mt-8">
+                    <button
+                      onClick={() => setNewsPage(p => Math.max(1, p - 1))}
+                      disabled={newsPage === 1}
+                      className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <span className="px-6 py-2 bg-indigo-100 text-indigo-700 rounded-xl font-semibold">
+                      Page {newsPage}
                     </span>
-                    <span className="text-gray-500 text-sm">{news.date}</span>
+                    <button
+                      onClick={() => setNewsPage(p => p + 1)}
+                      className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                      Next
+                    </button>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-3">{news.title}</h3>
-                  <p className="text-gray-600 text-sm">{news.summary}</p>
-                  <button className="mt-4 text-indigo-600 font-semibold hover:text-indigo-700 transition-colors">
-                    Read More →
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                )}
+              </>
+            )}
+          </>
         )}
 
         {/* No Results */}
