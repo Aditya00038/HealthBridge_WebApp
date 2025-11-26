@@ -293,12 +293,18 @@ const DoctorDashboard = () => {
       const appointmentData = await appointmentServices.getUserAppointments(user.uid, 'doctor');
       setAppointments(appointmentData);
       
-      // Calculate stats
+      // Calculate real stats from appointment data
+      const uniquePatients = [...new Set(appointmentData.map(a => a.patientId))].length;
+      const totalIncome = appointmentData
+        .filter(a => a.status === 'completed')
+        .reduce((sum, a) => sum + (a.consultationFee || 500), 0);
+      const completedTreatments = appointmentData.filter(a => a.status === 'completed').length;
+      
       const newStats = {
-        patients: 666, // Placeholder - can be calculated from unique patient IDs
-        income: 2111, // Placeholder - can be calculated from completed appointments
+        patients: uniquePatients,
+        income: totalIncome,
         appointments: appointmentData.length,
-        treatments: 402 // Placeholder - can be calculated from completed treatments
+        treatments: completedTreatments
       };
       
       setStats(newStats);

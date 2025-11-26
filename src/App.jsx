@@ -18,12 +18,14 @@ import DebugPrescriptions from '@/pages/patient/DebugPrescriptions';
 import LocatePage from '@/pages/patient/LocatePage';
 import VideoConsultation from '@/pages/patient/VideoConsultation';
 import PatientVideoAppointments from '@/pages/patient/PatientVideoAppointments';
+import HealthNews from '@/pages/patient/HealthNews';
 import DoctorDashboard from '@/pages/doctor/DoctorDashboard_Clean';
 import DoctorAppointments from '@/pages/doctor/DoctorAppointments';
 import DoctorPatients from '@/pages/doctor/DoctorPatients';
 import DoctorSchedule from '@/pages/doctor/DoctorSchedule';
 import DoctorPatientRecords from '@/pages/doctor/DoctorPatientRecords';
 import DoctorProfileSetup from '@/pages/DoctorProfileSetup';
+import DoctorCreateCamp from '@/pages/doctor/DoctorCreateCamp';
 import MedicineSellerDashboard from '@/pages/medicine-seller/MedicineSellerDashboard';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import MedicineShop from '@/pages/MedicineShop';
@@ -237,6 +239,14 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/patient/health-news" 
+                  element={
+                    <ProtectedRoute>
+                      <HealthNews />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/locate" 
                   element={
                     <ProtectedRoute>
@@ -273,6 +283,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <DoctorPatientRecords />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/doctor/create-camp" 
+                  element={
+                    <ProtectedRoute>
+                      <DoctorCreateCamp />
                     </ProtectedRoute>
                   } 
                 />

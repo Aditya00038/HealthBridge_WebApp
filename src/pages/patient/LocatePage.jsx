@@ -17,7 +17,8 @@ import {
   SparklesIcon,
   CurrencyRupeeIcon,
   DevicePhoneMobileIcon,
-  HomeModernIcon
+  HomeModernIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { 
@@ -27,8 +28,13 @@ import {
   calculateDistance,
   searchGooglePlaces
 } from '@/services/locationServices';
+import { getCampsByLocation } from '@/services/campServices';
+import { useAuth } from '@/context/AuthContext';
+import { registerForCamp, unregisterFromCamp } from '@/services/campServices';
+import toast from 'react-hot-toast';
 
 const LocatePage = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -38,6 +44,7 @@ const LocatePage = () => {
   const [facilities, setFacilities] = useState([]);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedFacilityDetails, setSelectedFacilityDetails] = useState(null);
+  const [firestoreCamps, setFirestoreCamps] = useState([]);
 
   // Load facilities when city changes
   useEffect(() => {
@@ -60,14 +67,58 @@ const LocatePage = () => {
     setLoading(true);
     (async () => {
       try {
+        let googlePlacesResults = [];
+        let firestoreCampsResults = [];
+        
+        // Get location for fetching camps
+        const cityDataForCoords = getFacilitiesByCity(selectedCity);
+        const loc = userLocation || (cityDataForCoords && cityDataForCoords[0] && cityDataForCoords[0].coordinates) || null;
+        
+        // Fetch Firestore camps if location available
+        if (loc) {
+          try {
+            const camps = await getCampsByLocation(loc.lat, loc.lng, 50);
+            // Filter by selectedType if not 'all'
+            firestoreCampsResults = selectedType === 'all' 
+              ? camps 
+              : camps.filter(camp => camp.type === selectedType);
+            
+            // Format Firestore camps to match facility structure
+            firestoreCampsResults = firestoreCampsResults.map(camp => ({
+              id: `firestore-${camp.id}`,
+              firestoreCampId: camp.id,
+              name: camp.title,
+              type: camp.type,
+              specialty: camp.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+              rating: 5.0,
+              reviews: camp.registered || 0,
+              distance: `${camp.distance} km`,
+              address: camp.location.address,
+              phone: 'N/A',
+              hours: `${camp.startTime} - ${camp.endTime}`,
+              coordinates: camp.location.coordinates,
+              organizerName: camp.organizerName,
+              organizerSpecialty: camp.organizerSpecialty,
+              description: camp.description,
+              date: camp.date,
+              capacity: camp.capacity,
+              registered: camp.registered,
+              registeredPatients: camp.registeredPatients || [],
+              isFirestoreCamp: true
+            }));
+            
+            setFirestoreCamps(firestoreCampsResults);
+          } catch (error) {
+            console.error('Error fetching Firestore camps:', error);
+          }
+        }
+        
         // If selectedType is one of the camp types, search Google Places for camp keywords
         if (selectedType && selectedType !== 'all' && campKeywords[selectedType]) {
-          const cityDataForCoords = getFacilitiesByCity(selectedCity);
-          const loc = userLocation || (cityDataForCoords && cityDataForCoords[0] && cityDataForCoords[0].coordinates) || null;
           if (!loc) {
             // Fallback: load city data but exclude hospitals
             const cityDataFallback = getFacilitiesByCity(selectedCity).filter(f => f.type !== 'hospital');
-            setFacilities(cityDataFallback);
+            setFacilities([...firestoreCampsResults, ...cityDataFallback]);
             setLoading(false);
             return;
           }
@@ -75,15 +126,15 @@ const LocatePage = () => {
           // Use API to find nearby camp events (8km radius)
           const results = await searchGooglePlaces(campKeywords[selectedType], loc, 8000, selectedType);
           // Exclude any places that are hospitals
-          const filtered = results.filter(r => !(r.rawTypes && r.rawTypes.includes('hospital')));
-          setFacilities(filtered);
-          setLoading(false);
-          return;
+          googlePlacesResults = results.filter(r => !(r.rawTypes && r.rawTypes.includes('hospital')));
+        } else {
+          // Default: load local city healthcare facilities but exclude hospitals
+          googlePlacesResults = getFacilitiesByCity(selectedCity).filter(f => f.type !== 'hospital');
         }
 
-        // Default: load local city healthcare facilities but exclude hospitals
-        const cityData = getFacilitiesByCity(selectedCity).filter(f => f.type !== 'hospital');
-        setFacilities(cityData);
+        // Merge Firestore camps with Google Places results
+        const allFacilities = [...firestoreCampsResults, ...googlePlacesResults];
+        setFacilities(allFacilities);
 
         if (userLocation) {
           calculateDistances(userLocation);
@@ -107,6 +158,30 @@ const LocatePage = () => {
         facility.coordinates.lng
       ).toFixed(1)} km`
     })));
+  };
+
+  const handleRegisterForCamp = async (campId, facility) => {
+    if (!user) {
+      toast.error('Please login to register for camps');
+      return;
+    }
+
+    try {
+      const isRegistered = facility.registeredPatients?.includes(user.uid);
+      
+      if (isRegistered) {
+        await unregisterFromCamp(campId, user.uid);
+        toast.success('Successfully unregistered from camp');
+      } else {
+        await registerForCamp(campId, user.uid, user.displayName || 'Anonymous');
+        toast.success('Successfully registered for camp!');
+      }
+      
+      // Reload facilities to update registration status
+      loadFacilities();
+    } catch (error) {
+      toast.error(error.message || 'Failed to register for camp');
+    }
   };
 
   const availableCities = [
@@ -582,27 +657,89 @@ const LocatePage = () => {
                     )}
                   </div>
 
+                  {/* Organizer Info for Firestore Camps */}
+                  {facility.isFirestoreCamp && facility.organizerName && (
+                    <div className="mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                      <div className="flex items-center gap-2 text-sm">
+                        <UserGroupIcon className="w-4 h-4 text-indigo-600" />
+                        <span className="text-gray-700">
+                          Organized by <strong>{facility.organizerName}</strong>
+                        </span>
+                      </div>
+                      {facility.organizerSpecialty && (
+                        <p className="text-xs text-gray-600 mt-1 ml-6">{facility.organizerSpecialty}</p>
+                      )}
+                      <div className="mt-2 flex items-center gap-3 text-xs text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <UserGroupIcon className="w-3 h-3" />
+                          {facility.registered}/{facility.capacity} registered
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="w-3 h-3" />
+                          {facility.date?.toDate?.()?.toLocaleDateString() || 'TBD'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Compact Action Buttons */}
                   <div className="flex gap-2">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewDetails(facility);
-                      }}
-                      className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-2.5 rounded-lg font-bold text-sm hover:from-teal-700 hover:to-cyan-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
-                    >
-                      <MapIcon className="w-4 h-4" />
-                      View Details
-                    </button>
-                    {facility.phone && (
-                      <a
-                        href={`tel:${facility.phone}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="px-4 py-2.5 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
-                        title="Call Hospital"
-                      >
-                        <PhoneIcon className="w-4 h-4" />
-                      </a>
+                    {facility.isFirestoreCamp ? (
+                      <>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRegisterForCamp(facility.firestoreCampId, facility);
+                          }}
+                          disabled={facility.registered >= facility.capacity && !facility.registeredPatients?.includes(user?.uid)}
+                          className={`flex-1 ${
+                            facility.registeredPatients?.includes(user?.uid)
+                              ? 'bg-red-600 hover:bg-red-700'
+                              : facility.registered >= facility.capacity
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700'
+                          } text-white py-2.5 rounded-lg font-bold text-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50`}
+                        >
+                          <UserGroupIcon className="w-4 h-4" />
+                          {facility.registeredPatients?.includes(user?.uid) 
+                            ? 'Unregister' 
+                            : facility.registered >= facility.capacity 
+                            ? 'Full' 
+                            : 'Register'}
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(facility);
+                          }}
+                          className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
+                        >
+                          <MapIcon className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetails(facility);
+                          }}
+                          className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-2.5 rounded-lg font-bold text-sm hover:from-teal-700 hover:to-cyan-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                        >
+                          <MapIcon className="w-4 h-4" />
+                          View Details
+                        </button>
+                        {facility.phone && facility.phone !== 'N/A' && (
+                          <a
+                            href={`tel:${facility.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-4 py-2.5 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
+                            title="Call Hospital"
+                          >
+                            <PhoneIcon className="w-4 h-4" />
+                          </a>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

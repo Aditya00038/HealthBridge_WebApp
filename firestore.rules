@@ -124,6 +124,29 @@ service cloud.firestore {
       allow list: if request.auth != null;
     }
     
+    // Health Camps
+    match /health_camps/{campId} {
+      // Anyone authenticated can read camps
+      allow read: if request.auth != null;
+      
+      // Doctors can create camps
+      allow create: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+      
+      // Doctors can update their own camps
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.organizerId || 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registered', 'registeredPatients']));
+      
+      // Doctors can delete their own camps
+      allow delete: if request.auth != null && request.auth.uid == resource.data.organizerId;
+    }
+    
+    // Allow listing health camps
+    match /health_camps/{document=**} {
+      allow list: if request.auth != null;
+    }
+    
     // Allow read access to public data
     match /public/{document=**} {
       allow read: if true;

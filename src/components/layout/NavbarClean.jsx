@@ -39,14 +39,16 @@ const NavbarClean = () => {
     { name: 'Video Calls', href: '/patient/video-appointments' },
     { name: 'AI Assistant', href: '/chatbot' },
     { name: 'Prescriptions', href: '/patient/prescriptions' },
-    { name: 'Locate', href: '/locate' }
+    { name: 'Locate', href: '/locate' },
+    { name: 'Health News', href: '/patient/health-news' }
   ];
 
   const doctorNavigation = [
     { name: 'Dashboard', href: '/doctor/dashboard' },
     { name: 'My Schedule', href: '/doctor/schedule' },
     { name: 'Appointments', href: '/doctor/appointments' },
-    { name: 'Patient Records', href: '/doctor/patient-records' }
+    { name: 'Patient Records', href: '/doctor/patient-records' },
+    { name: 'Create Camp', href: '/doctor/create-camp' }
   ];
 
   const medicineSellerNavigation = [
