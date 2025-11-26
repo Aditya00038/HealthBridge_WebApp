@@ -29,7 +29,7 @@ import {
   searchGooglePlaces
 } from '@/services/locationServices';
 import { getCampsByLocation } from '@/services/campServices';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { registerForCamp, unregisterFromCamp } from '@/services/campServices';
 import toast from 'react-hot-toast';
 
