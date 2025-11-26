@@ -375,7 +375,7 @@ const DoctorDashboard = () => {
     {
       name: 'Income',
       value: stats.income,
-      icon: () => <span className="text-3xl font-bold text-blue-600">$</span>,
+      icon: () => <span className="text-3xl font-bold text-blue-600">₹</span>,
       color: 'text-blue-600',
       bgColor: 'from-blue-100 to-blue-50'
     },
