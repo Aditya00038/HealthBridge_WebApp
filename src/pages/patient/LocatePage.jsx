@@ -46,20 +46,23 @@ const LocatePage = () => {
   const [selectedFacilityDetails, setSelectedFacilityDetails] = useState(null);
   const [firestoreCamps, setFirestoreCamps] = useState([]);
 
-  // Load facilities when city changes
+  // Load facilities when city or type changes
   useEffect(() => {
     loadFacilities();
-  }, [selectedCity]);
+  }, [selectedCity, selectedType]);
 
-  // Get user location on mount
+  // Get user location on mount and reload facilities
   useEffect(() => {
     getUserLocation()
       .then(location => {
         setUserLocation(location);
-        calculateDistances(location);
+        // Reload facilities with new location
+        loadFacilities();
       })
       .catch(error => {
         console.log('Location access denied:', error);
+        // Still try to load facilities without location
+        loadFacilities();
       });
   }, []);
 
@@ -74,38 +77,55 @@ const LocatePage = () => {
         const cityDataForCoords = getFacilitiesByCity(selectedCity);
         const loc = userLocation || (cityDataForCoords && cityDataForCoords[0] && cityDataForCoords[0].coordinates) || null;
         
+        console.log('Loading facilities with location:', loc);
+        
         // Fetch Firestore camps if location available
         if (loc) {
           try {
             const camps = await getCampsByLocation(loc.lat, loc.lng, 50);
+            console.log('Fetched Firestore camps:', camps.length, camps);
             // Filter by selectedType if not 'all'
             firestoreCampsResults = selectedType === 'all' 
               ? camps 
               : camps.filter(camp => camp.type === selectedType);
+            console.log('Filtered camps for type', selectedType, ':', firestoreCampsResults.length);
             
             // Format Firestore camps to match facility structure
-            firestoreCampsResults = firestoreCampsResults.map(camp => ({
-              id: `firestore-${camp.id}`,
-              firestoreCampId: camp.id,
-              name: camp.title,
-              type: camp.type,
-              specialty: camp.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-              rating: 5.0,
-              reviews: camp.registered || 0,
-              distance: `${camp.distance} km`,
-              address: camp.location.address,
-              phone: 'N/A',
-              hours: `${camp.startTime} - ${camp.endTime}`,
-              coordinates: camp.location.coordinates,
-              organizerName: camp.organizerName,
-              organizerSpecialty: camp.organizerSpecialty,
-              description: camp.description,
-              date: camp.date,
-              capacity: camp.capacity,
-              registered: camp.registered,
-              registeredPatients: camp.registeredPatients || [],
-              isFirestoreCamp: true
-            }));
+            firestoreCampsResults = firestoreCampsResults.map(camp => {
+              // Default images for different camp types
+              const campImages = {
+                blood_donation: 'https://images.unsplash.com/photo-1615461065639-012b1b6a89b3?w=400&h=250&fit=crop',
+                dental_camp: 'https://images.unsplash.com/photo-1606811971618-4486d14f3f99?w=400&h=250&fit=crop',
+                treatment_camp: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=250&fit=crop',
+                vaccination: 'https://images.unsplash.com/photo-1632053002928-9323ee37e3b3?w=400&h=250&fit=crop',
+                eye_camp: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=250&fit=crop'
+              };
+              
+              return {
+                id: `firestore-${camp.id}`,
+                firestoreCampId: camp.id,
+                name: camp.title,
+                type: camp.type,
+                specialty: camp.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                rating: 5.0,
+                reviews: camp.registered || 0,
+                distance: `${camp.distance} km`,
+                address: camp.location.address,
+                phone: 'N/A',
+                hours: `${camp.startTime} - ${camp.endTime}`,
+                image: campImages[camp.type] || 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=250&fit=crop',
+                services: ['Health Camp', camp.type.replace('_', ' ')],
+                coordinates: camp.location.coordinates,
+                organizerName: camp.organizerName,
+                organizerSpecialty: camp.organizerSpecialty,
+                description: camp.description,
+                date: camp.date,
+                capacity: camp.capacity,
+                registered: camp.registered,
+                registeredPatients: camp.registeredPatients || [],
+                isFirestoreCamp: true
+              };
+            });
             
             setFirestoreCamps(firestoreCampsResults);
           } catch (error) {
