@@ -146,7 +146,7 @@ const DoctorAppointments = () => {
   const nextPatient = todayAppointments[0];
   
   // Filter appointments by date range
-  const [selectedDate, setSelectedDate] = useState('today');
+  const [selectedDate, setSelectedDate] = useState('week');
   const getFilteredAppointments = () => {
     const now = new Date();
     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
