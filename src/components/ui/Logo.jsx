@@ -108,7 +108,7 @@ const Logo = ({
       {/* Logo Image with enhanced background */}
       <div className="bg-white rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-md hover:shadow-lg transition-shadow duration-300">
         <img 
-          src="/company-logo.png" 
+          src="/app-logo.png" 
           alt="CareConnect Logo" 
           className={`${sizes.img} object-contain`}
         />
